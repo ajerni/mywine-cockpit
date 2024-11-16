@@ -71,7 +71,17 @@ async function getWineCount(): Promise<number> {
   return Number(result.rows[0]?.total_wine_entries) || 0;
 }
 
-async function getMessageCount() {
-  // We'll add your SQL query here
-  return 0;
+interface MessageCount {
+  total_contact_entries: number;
+}
+
+async function getMessageCount(): Promise<number> {
+  const result = await query<MessageCount>(
+    `select
+      count(*) as total_contact_entries
+    from
+      wine_contact`
+  );
+  
+  return Number(result.rows[0]?.total_contact_entries) || 0;
 } 
