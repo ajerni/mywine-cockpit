@@ -30,95 +30,6 @@ interface ListConfig {
   columns: Column[];
 }
 
-const handleUserAction = async (user: any) => {
-  try {
-    const response = await fetch(`/api/users/${user.id}/toggle-pro`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
-    
-    if (!response.ok) {
-      throw new Error('Failed to update user pro status');
-    }
-    
-    // You might want to refresh the list after this action
-    // You can implement this later when we add the API endpoint
-    console.log('Successfully updated user:', user);
-  } catch (error) {
-    console.error('Failed to update user:', error);
-  }
-};
-
-const LIST_CONFIGS: Record<string, ListConfig> = {
-  users: {
-    title: 'Users List',
-    columns: [
-      { key: 'id', label: 'ID', sortable: true },
-      { key: 'username', label: 'Username', sortable: true, filterable: true },
-      { key: 'email', label: 'Email', sortable: true, filterable: true },
-      { 
-        key: 'isPro', 
-        label: 'Pro Status', 
-        sortable: true, 
-        filterable: true,
-        render: (value) => (
-          <span className={value ? 'text-green-600' : 'text-gray-600'}>
-            {value ? 'Pro' : 'Basic'}
-          </span>
-        )
-      },
-      { 
-        key: 'createdAt', 
-        label: 'Created At', 
-        sortable: true,
-        render: (value) => new Date(value).toLocaleDateString()
-      },
-      {
-        key: 'actions',
-        label: 'Actions',
-        render: (_, row) => (
-          <button
-            onClick={() => handleUserAction(row)}
-            className="text-blue-500 hover:text-blue-700"
-          >
-            Toggle Pro Status
-          </button>
-        ),
-      },
-    ],
-  },
-  wines: {
-    title: 'Wines List',
-    columns: [
-      { key: 'wine_id', label: 'ID', sortable: true },
-      { key: 'wine_name', label: 'Name', sortable: true, filterable: true },
-      { key: 'year', label: 'Year', sortable: true, filterable: true },
-      { key: 'user_id', label: 'User ID', sortable: true },
-      { key: 'username', label: 'Username', sortable: true, filterable: true },
-    ],
-  },
-  messages: {
-    title: 'Contact Messages',
-    columns: [
-      { key: 'id', label: 'ID', sortable: true },
-      { key: 'user_id', label: 'User ID', sortable: true },
-      { key: 'first_name', label: 'First Name', sortable: true, filterable: true },
-      { key: 'last_name', label: 'Last Name', sortable: true, filterable: true },
-      { key: 'email', label: 'Email', sortable: true, filterable: true },
-      { key: 'subject', label: 'Subject', sortable: true, filterable: true },
-      { key: 'message', label: 'Message', filterable: true },
-      { 
-        key: 'timestamp', 
-        label: 'Time', 
-        sortable: true,
-        render: (value) => new Date(value).toLocaleString()
-      },
-    ],
-  },
-};
-
 export function DashboardContent() {
   const router = useRouter();
   const [stats, setStats] = useState<Stats>(initialStats);
@@ -153,6 +64,29 @@ export function DashboardContent() {
     }
   };
 
+  const handleUserAction = async (user: any) => {
+    try {
+      const response = await fetch(`/api/users/${user.id}/toggle-pro`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to update user pro status');
+      }
+      
+      fetchStats();
+      setActiveList(null);
+      setTimeout(() => setActiveList('users'), 100);
+      
+      console.log('Successfully updated user:', user);
+    } catch (error) {
+      console.error('Failed to update user:', error);
+    }
+  };
+
   const handleLogout = async () => {
     try {
       await fetch('/api/logout', {
@@ -165,6 +99,74 @@ export function DashboardContent() {
     } catch (error) {
       console.error('Logout failed:', error);
     }
+  };
+
+  const LIST_CONFIGS: Record<string, ListConfig> = {
+    users: {
+      title: 'Users List',
+      columns: [
+        { key: 'id', label: 'ID', sortable: true },
+        { key: 'username', label: 'Username', sortable: true, filterable: true },
+        { key: 'email', label: 'Email', sortable: true, filterable: true },
+        { 
+          key: 'isPro', 
+          label: 'Pro Status', 
+          sortable: true, 
+          filterable: true,
+          render: (value) => (
+            <span className={value ? 'text-green-600' : 'text-gray-600'}>
+              {value ? 'Pro' : 'Basic'}
+            </span>
+          )
+        },
+        { 
+          key: 'createdAt', 
+          label: 'Created At', 
+          sortable: true,
+          render: (value) => new Date(value).toLocaleDateString()
+        },
+        {
+          key: 'actions',
+          label: 'Actions',
+          render: (_, row) => (
+            <button
+              onClick={() => handleUserAction(row)}
+              className="text-blue-500 hover:text-blue-700"
+            >
+              Toggle Pro Status
+            </button>
+          ),
+        },
+      ],
+    },
+    wines: {
+      title: 'Wines List',
+      columns: [
+        { key: 'wine_id', label: 'ID', sortable: true },
+        { key: 'wine_name', label: 'Name', sortable: true, filterable: true },
+        { key: 'year', label: 'Year', sortable: true, filterable: true },
+        { key: 'user_id', label: 'User ID', sortable: true },
+        { key: 'username', label: 'Username', sortable: true, filterable: true },
+      ],
+    },
+    messages: {
+      title: 'Contact Messages',
+      columns: [
+        { key: 'id', label: 'ID', sortable: true },
+        { key: 'user_id', label: 'User ID', sortable: true },
+        { key: 'first_name', label: 'First Name', sortable: true, filterable: true },
+        { key: 'last_name', label: 'Last Name', sortable: true, filterable: true },
+        { key: 'email', label: 'Email', sortable: true, filterable: true },
+        { key: 'subject', label: 'Subject', sortable: true, filterable: true },
+        { key: 'message', label: 'Message', filterable: true },
+        { 
+          key: 'timestamp', 
+          label: 'Time', 
+          sortable: true,
+          render: (value) => new Date(value).toLocaleString()
+        },
+      ],
+    },
   };
 
   return (
