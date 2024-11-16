@@ -28,8 +28,17 @@ export async function POST(
         countQuery = `SELECT COUNT(*) as total FROM wine_users`;
         break;
       case 'wines':
-        query = `SELECT * FROM wines`;
-        countQuery = `SELECT COUNT(*) as total FROM wines`;
+        query = `SELECT 
+          wt.id AS wine_id,
+          wt.name AS wine_name,
+          wt.year,
+          wu.id AS user_id,
+          wu.username
+        FROM 
+          wine_table wt
+        JOIN 
+          wine_users wu ON wt.user_id = wu.id`;
+        countQuery = `SELECT COUNT(*) as total FROM wine_table`;
         break;
       // Add more cases as needed
       default:

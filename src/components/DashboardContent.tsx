@@ -92,10 +92,11 @@ const LIST_CONFIGS: Record<string, ListConfig> = {
   wines: {
     title: 'Wines List',
     columns: [
-      { key: 'id', label: 'ID', sortable: true },
-      { key: 'name', label: 'Name', sortable: true, filterable: true },
-      { key: 'user', label: 'User', sortable: true, filterable: true },
-      { key: 'createdAt', label: 'Created At', sortable: true },
+      { key: 'wine_id', label: 'ID', sortable: true },
+      { key: 'wine_name', label: 'Name', sortable: true, filterable: true },
+      { key: 'year', label: 'Year', sortable: true, filterable: true },
+      { key: 'user_id', label: 'User ID', sortable: true },
+      { key: 'username', label: 'Username', sortable: true, filterable: true },
     ],
   },
   // Add more list configurations as needed
