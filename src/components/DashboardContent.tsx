@@ -108,6 +108,30 @@ export function DashboardContent() {
     }
   };
 
+  const handleDeleteMessage = async (messageId: number) => {
+    try {
+      const response = await fetch(`/api/messages/${messageId}/delete`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to delete message');
+      }
+      
+      // Refresh stats and list
+      fetchStats();
+      setActiveList(null);
+      setTimeout(() => setActiveList('messages'), 100);
+      
+      console.log('Successfully deleted message:', messageId);
+    } catch (error) {
+      console.error('Failed to delete message:', error);
+    }
+  };
+
   const LIST_CONFIGS: Record<string, ListConfig & { defaultSort?: { field: string; direction: 'ASC' | 'DESC' } }> = {
     users: {
       title: 'Users List',
@@ -172,6 +196,18 @@ export function DashboardContent() {
           label: 'Time', 
           sortable: true,
           render: (value) => new Date(value).toLocaleString()
+        },
+        {
+          key: 'actions',
+          label: 'Actions',
+          render: (_, row) => (
+            <button
+              onClick={() => handleDeleteMessage(row.id)}
+              className="text-red-500 hover:text-red-700"
+            >
+              Delete
+            </button>
+          ),
         },
       ],
     },
