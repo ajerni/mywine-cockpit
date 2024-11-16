@@ -9,7 +9,7 @@ const protectedPaths = ['/dashboard'];
 const allowedOrigins = [
   'http://localhost:3000',
   'https://mywine-cockpit.vercel.app',
-  'https://mywine-cockpit-git-sums-ajernis-projects.vercel.app',
+  'https://mywine-cockpit-git-dev-ajernis-projects.vercel.app',
   'http://cockpit.mywine.info',
 ];
 

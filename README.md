@@ -1,3 +1,3 @@
 # mywine-cockpit
 
-working on sums branch for totals - check
+working on main branch again - adding totals
