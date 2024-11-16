@@ -2,11 +2,10 @@ import { NextResponse } from 'next/server';
 import { query } from '@/lib/db';
 
 export async function POST(
-  request: Request,
-  { params }: { params: { userId: string } }
+  request: Request
 ) {
   try {
-    const userId = params.userId;
+    const userId = request.url.split('/').slice(-2)[0];
 
     const result = await query(
       `UPDATE wine_users 
