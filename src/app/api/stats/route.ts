@@ -31,9 +31,24 @@ export async function GET() {
   }
 }
 
-async function getUserStats() {
-  // We'll add your SQL query here
-  return { total: 0, pro: 0 };
+interface UserStats {
+  total_users: number;
+  pro_users: number;
+}
+
+async function getUserStats(): Promise<{ total: number; pro: number }> {
+  const result = await query<UserStats>(
+    `SELECT 
+      COUNT(*) AS total_users,
+      COUNT(CASE WHEN has_proaccount = true THEN 1 END) AS pro_users
+    FROM 
+      wine_users`
+  );
+  
+  return {
+    total: Number(result.rows[0]?.total_users) || 0,
+    pro: Number(result.rows[0]?.pro_users) || 0
+  };
 }
 
 async function getImageStats() {
