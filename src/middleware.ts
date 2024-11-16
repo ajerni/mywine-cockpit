@@ -64,12 +64,12 @@ export const config = {
   matcher: [
     /*
      * Match all request paths except:
-     * - api/login (authentication endpoint)
+     * - api routes (all API endpoints)
      * - _next/static (static files)
      * - _next/image (image optimization files)
      * - favicon.ico (favicon file)
      * - public files (public/*)
      */
-    '/((?!api/login|_next/static|_next/image|favicon.ico|public/).*)',
+    '/((?!api|_next/static|_next/image|favicon.ico|public/).*)',
   ],
 }; 

@@ -3,11 +3,9 @@ import { Pool, QueryResult, QueryResultRow } from 'pg';
 // Create a single pool instance that can be reused
 const pool = new Pool({
   connectionString: process.env.POSTGRES_URL,
-  ssl: process.env.NODE_ENV === 'production' 
-    ? {
-        rejectUnauthorized: false
-      }
-    : false,
+  ssl: {
+    rejectUnauthorized: process.env.NODE_ENV === 'development' ? true : false
+  },
   max: 10,
   idleTimeoutMillis: 30000,
   connectionTimeoutMillis: 5000,
