@@ -2,6 +2,8 @@
 
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
+import { DataList } from './lists/DataList';
+import { Column, ListParams, ListResponse, Filter } from '@/types/lists';
 
 interface Stats {
   users: {
@@ -23,11 +25,88 @@ const initialStats: Stats = {
   messages: 0
 };
 
+interface ListConfig {
+  title: string;
+  columns: Column[];
+}
+
+const handleUserAction = async (user: any) => {
+  try {
+    const response = await fetch(`/api/users/${user.id}/toggle-pro`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+    
+    if (!response.ok) {
+      throw new Error('Failed to update user pro status');
+    }
+    
+    // You might want to refresh the list after this action
+    // You can implement this later when we add the API endpoint
+    console.log('Successfully updated user:', user);
+  } catch (error) {
+    console.error('Failed to update user:', error);
+  }
+};
+
+const LIST_CONFIGS: Record<string, ListConfig> = {
+  users: {
+    title: 'Users List',
+    columns: [
+      { key: 'id', label: 'ID', sortable: true },
+      { key: 'username', label: 'Username', sortable: true, filterable: true },
+      { key: 'email', label: 'Email', sortable: true, filterable: true },
+      { 
+        key: 'isPro', 
+        label: 'Pro Status', 
+        sortable: true, 
+        filterable: true,
+        render: (value) => (
+          <span className={value ? 'text-green-600' : 'text-gray-600'}>
+            {value ? 'Pro' : 'Basic'}
+          </span>
+        )
+      },
+      { 
+        key: 'createdAt', 
+        label: 'Created At', 
+        sortable: true,
+        render: (value) => new Date(value).toLocaleDateString()
+      },
+      {
+        key: 'actions',
+        label: 'Actions',
+        render: (_, row) => (
+          <button
+            onClick={() => handleUserAction(row)}
+            className="text-blue-500 hover:text-blue-700"
+          >
+            Toggle Pro Status
+          </button>
+        ),
+      },
+    ],
+  },
+  wines: {
+    title: 'Wines List',
+    columns: [
+      { key: 'id', label: 'ID', sortable: true },
+      { key: 'name', label: 'Name', sortable: true, filterable: true },
+      { key: 'user', label: 'User', sortable: true, filterable: true },
+      { key: 'createdAt', label: 'Created At', sortable: true },
+    ],
+  },
+  // Add more list configurations as needed
+};
+
 export function DashboardContent() {
   const router = useRouter();
   const [stats, setStats] = useState<Stats>(initialStats);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [activeList, setActiveList] = useState<string | null>(null);
 
   useEffect(() => {
     fetchStats();
@@ -112,7 +191,12 @@ export function DashboardContent() {
         <div className="bg-white rounded-lg p-6">
           <h2 className="text-xl font-semibold mb-4">Users</h2>
           <div className="space-y-2">
-            <p>List of users</p>
+            <button
+              onClick={() => setActiveList('users')}
+              className="text-blue-500 hover:text-blue-700"
+            >
+              List of users
+            </button>
             <p>Change Pro status</p>
           </div>
         </div>
@@ -120,7 +204,12 @@ export function DashboardContent() {
         {/* Wines Section */}
         <div className="bg-white rounded-lg p-6">
           <h2 className="text-xl font-semibold mb-4">Wines</h2>
-          <p>List of wines</p>
+          <button
+            onClick={() => setActiveList('wines')}
+            className="text-blue-500 hover:text-blue-700"
+          >
+            List of wines
+          </button>
         </div>
 
         {/* Images Section */}
@@ -138,6 +227,15 @@ export function DashboardContent() {
           <p>List of messages</p>
         </div>
       </div>
+
+      {/* Add the DataList modal */}
+      {activeList && LIST_CONFIGS[activeList] && (
+        <DataList
+          listId={activeList}
+          {...LIST_CONFIGS[activeList]}
+          onClose={() => setActiveList(null)}
+        />
+      )}
     </div>
   );
 } 
