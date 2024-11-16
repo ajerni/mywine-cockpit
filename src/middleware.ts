@@ -5,7 +5,26 @@ import { jwtVerify } from 'jose';
 // Paths that require authentication
 const protectedPaths = ['/dashboard'];
 
+// Add allowed origins
+const allowedOrigins = [
+  'http://localhost:3000',
+  'https://mywine-cockpit.vercel.app',
+  'http://cockpit.mywine.info',
+];
+
 export async function middleware(request: NextRequest) {
+  // CORS check
+  const origin = request.headers.get('origin');
+  if (origin && !allowedOrigins.includes(origin)) {
+    return new NextResponse(null, {
+      status: 403,
+      statusText: 'Forbidden',
+      headers: {
+        'Content-Type': 'text/plain',
+      }
+    });
+  }
+
   // Check if the requested path requires authentication
   const isProtectedPath = protectedPaths.some(path => 
     request.nextUrl.pathname.startsWith(path)
@@ -49,7 +68,8 @@ export const config = {
      * - _next/static (static files)
      * - _next/image (image optimization files)
      * - favicon.ico (favicon file)
+     * - public files (public/*)
      */
-    '/((?!api/login|_next/static|_next/image|favicon.ico).*)',
+    '/((?!api/login|_next/static|_next/image|favicon.ico|public/).*)',
   ],
 }; 
