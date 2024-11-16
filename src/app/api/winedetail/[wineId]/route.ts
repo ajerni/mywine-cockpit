@@ -2,11 +2,11 @@ import { NextResponse } from 'next/server';
 import { query } from '@/lib/db';
 
 export async function GET(
-  request: Request,
-  { params }: { params: { wineId: string } }
+  request: Request
 ) {
   try {
-    const wineId = params.wineId;
+    // Extract wineId from URL
+    const wineId = request.url.split('/').pop();
 
     const result = await query(
       `SELECT 
