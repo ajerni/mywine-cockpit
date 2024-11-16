@@ -2,18 +2,12 @@ import { NextRequest, NextResponse } from 'next/server';
 import { query as dbQuery } from '@/lib/db';
 import { ListParams } from '@/types/lists';
 
-interface RouteSegment {
-  params: {
-    listId: string;
-  };
-}
-
 export async function POST(
   request: NextRequest,
-  segment: RouteSegment
+  { params }: { params: Record<string, string> }
 ) {
   try {
-    const { listId } = segment.params;
+    const { listId } = params;
     const body: ListParams = await request.json();
 
     // Here you'll implement the specific SQL queries for each list type
