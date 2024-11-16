@@ -1,14 +1,59 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
+
+interface Stats {
+  users: {
+    total: number;
+    pro: number;
+  };
+  images: {
+    folders: number;
+    total: number;
+  };
+  wines: number;
+  messages: number;
+}
+
+const initialStats: Stats = {
+  users: { total: 0, pro: 0 },
+  images: { folders: 0, total: 0 },
+  wines: 0,
+  messages: 0
+};
 
 export function DashboardContent() {
   const router = useRouter();
-  const stats = {
-    users: {total: 20, pro: 10},
-    images: {folders: 0, total: 0},
-    wines: 38,
-    messages: 5
+  const [stats, setStats] = useState<Stats>(initialStats);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetchStats();
+  }, []);
+
+  const fetchStats = async () => {
+    try {
+      const response = await fetch('/api/stats', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch stats');
+      }
+
+      const data = await response.json();
+      setStats(data);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load stats');
+      console.error('Error fetching stats:', err);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleLogout = async () => {
@@ -40,18 +85,23 @@ export function DashboardContent() {
 
       {/* Stats Overview */}
       <div className="bg-white rounded-lg p-6 mb-6">
+        {error && (
+          <div className="text-red-500 mb-4">
+            Error loading stats: {error}
+          </div>
+        )}
         <div className="grid grid-cols-3 gap-4">
           <div>
-            <p>Users Total: {stats.users.total}</p>
-            <p>Pro Users: {stats.users.pro}</p>
+            <p>Users Total: {loading ? '...' : stats.users.total}</p>
+            <p>Pro Users: {loading ? '...' : stats.users.pro}</p>
           </div>
           <div>
-            <p>Image folders: {stats.images.folders}</p>
-            <p>Images: {stats.images.total}</p>
+            <p>Image folders: {loading ? '...' : stats.images.folders}</p>
+            <p>Images: {loading ? '...' : stats.images.total}</p>
           </div>
           <div>
-            <p>Wines: {stats.wines}</p>
-            <p>Messages: {stats.messages}</p>
+            <p>Wines: {loading ? '...' : stats.wines}</p>
+            <p>Messages: {loading ? '...' : stats.messages}</p>
           </div>
         </div>
       </div>
