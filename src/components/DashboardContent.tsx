@@ -99,7 +99,24 @@ const LIST_CONFIGS: Record<string, ListConfig> = {
       { key: 'username', label: 'Username', sortable: true, filterable: true },
     ],
   },
-  // Add more list configurations as needed
+  messages: {
+    title: 'Contact Messages',
+    columns: [
+      { key: 'id', label: 'ID', sortable: true },
+      { key: 'user_id', label: 'User ID', sortable: true },
+      { key: 'first_name', label: 'First Name', sortable: true, filterable: true },
+      { key: 'last_name', label: 'Last Name', sortable: true, filterable: true },
+      { key: 'email', label: 'Email', sortable: true, filterable: true },
+      { key: 'subject', label: 'Subject', sortable: true, filterable: true },
+      { key: 'message', label: 'Message', filterable: true },
+      { 
+        key: 'timestamp', 
+        label: 'Time', 
+        sortable: true,
+        render: (value) => new Date(value).toLocaleString()
+      },
+    ],
+  },
 };
 
 export function DashboardContent() {
@@ -196,9 +213,9 @@ export function DashboardContent() {
               onClick={() => setActiveList('users')}
               className="text-blue-500 hover:text-blue-700"
             >
-              List of users
+              List of users & Change pro status
             </button>
-            <p>Change Pro status</p>
+           
           </div>
         </div>
 
@@ -225,7 +242,12 @@ export function DashboardContent() {
         {/* Contact Messages Section */}
         <div className="bg-white rounded-lg p-6">
           <h2 className="text-xl font-semibold mb-4">Contact Messages</h2>
-          <p>List of messages</p>
+          <button
+            onClick={() => setActiveList('messages')}
+            className="text-blue-500 hover:text-blue-700"
+          >
+            List of messages
+          </button>
         </div>
       </div>
 

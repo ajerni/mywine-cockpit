@@ -40,7 +40,19 @@ export async function POST(
           wine_users wu ON wt.user_id = wu.id`;
         countQuery = `SELECT COUNT(*) as total FROM wine_table`;
         break;
-      // Add more cases as needed
+      case 'messages':
+        query = `SELECT 
+          id, 
+          user_id, 
+          first_name, 
+          last_name, 
+          email, 
+          subject, 
+          message, 
+          timestamp 
+        FROM wine_contact`;
+        countQuery = `SELECT COUNT(*) as total FROM wine_contact`;
+        break;
       default:
         throw new Error('Invalid list type');
     }
