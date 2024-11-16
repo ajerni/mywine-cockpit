@@ -8,15 +8,22 @@ interface DataListProps<T> {
   columns: Column[];
   title: string;
   onClose?: () => void;
+  defaultSort?: {
+    field: string;
+    direction: 'ASC' | 'DESC';
+  };
+  onRowClick?: (row: any) => void;
 }
 
-export function DataList<T>({ listId, columns, title, onClose }: DataListProps<T>) {
+export function DataList<T>({ listId, columns, title, onClose, defaultSort, onRowClick }: DataListProps<T>) {
   const [data, setData] = useState<T[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [params, setParams] = useState<ListParams>({
     page: 1,
     pageSize: 10,
+    sortBy: defaultSort?.field || undefined,
+    sortDirection: defaultSort?.direction?.toLowerCase() as 'asc' | 'desc' | undefined
   });
   const [filters, setFilters] = useState<Filter[]>([]);
   const [total, setTotal] = useState(0);
@@ -125,7 +132,11 @@ export function DataList<T>({ listId, columns, title, onClose }: DataListProps<T
             </thead>
             <tbody>
               {data.map((row: any, i) => (
-                <tr key={i} className="border-b hover:bg-gray-50">
+                <tr 
+                  key={i} 
+                  className="border-b hover:bg-gray-50 cursor-pointer"
+                  onClick={() => onRowClick?.(row)}
+                >
                   {columns.map(col => (
                     <td key={col.key} className="px-4 py-2">
                       {col.render ? col.render(row[col.key], row) : row[col.key]}

@@ -17,7 +17,7 @@ export interface ListParams {
   page: number;
   pageSize: number;
   sortBy?: string;
-  sortDirection?: SortDirection;
+  sortDirection?: 'asc' | 'desc';
   filters?: Filter[];
 }
 

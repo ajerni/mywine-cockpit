@@ -3,22 +3,25 @@ import { query } from '@/lib/db';
 
 export async function GET() {
   try {
-    // We'll collect all stats in parallel for better performance
     const stats = await Promise.all([
       // You can add your SQL queries here as we go along
       // Example structure:
       getUserStats(),
       getImageStats(),
       getWineCount(),
+      getNotesCount(),
+      getAISummaryCount(),
       getMessageCount(),
     ]);
 
-    const [userStats, imageStats, wineCount, messageCount] = stats;
+    const [userStats, imageStats, wineCount, notesCount, aiSummaryCount, messageCount] = stats;
 
     return NextResponse.json({
       users: userStats,
       images: imageStats,
       wines: wineCount,
+      notes: notesCount,
+      ai_summaries: aiSummaryCount,
       messages: messageCount,
     });
 
@@ -70,6 +73,38 @@ async function getWineCount(): Promise<number> {
   
   return Number(result.rows[0]?.total_wine_entries) || 0;
 }
+
+interface NotesCount {
+    total_notes_entries: number;
+  }
+  
+  async function getNotesCount(): Promise<number> {
+    const result = await query<NotesCount>(
+      `select
+        count(*) as total_notes_entries
+      from
+        wine_notes`
+    );
+    
+    return Number(result.rows[0]?.total_notes_entries) || 0;
+  }
+
+
+  interface AISummaryCount {
+    total_ai_summary_entries: number;
+  }
+  
+  async function getAISummaryCount(): Promise<number> {
+    const result = await query<AISummaryCount>(
+      `select
+        count(*) as total_ai_summary_entries
+      from
+        wine_aisummaries`
+    );
+    
+    return Number(result.rows[0]?.total_ai_summary_entries) || 0;
+  }
+
 
 interface MessageCount {
   total_contact_entries: number;

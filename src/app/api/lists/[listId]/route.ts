@@ -40,6 +40,11 @@ export async function POST(
         'subject': 'subject',
         'message': 'message',
         'timestamp': 'timestamp'
+      },
+      users_wine_count: {
+        'id': 'wu.id',
+        'username': 'wu.username',
+        'wine_count': 'wine_count'
       }
     };
 
@@ -81,6 +86,19 @@ export async function POST(
           timestamp 
         FROM wine_contact`;
         countQuery = `SELECT COUNT(*) as total FROM wine_contact`;
+        break;
+      case 'users_wine_count':
+        query = `SELECT 
+          wu.id,
+          wu.username,
+          COUNT(wt.id) AS wine_count
+        FROM 
+          wine_users wu
+        LEFT JOIN 
+          wine_table wt ON wu.id = wt.user_id
+        GROUP BY 
+          wu.id, wu.username`;
+        countQuery = `SELECT COUNT(*) as total FROM wine_users`;
         break;
       default:
         throw new Error('Invalid list type');

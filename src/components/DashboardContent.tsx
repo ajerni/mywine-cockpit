@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { DataList } from './lists/DataList';
 import { Column, ListParams, ListResponse, Filter } from '@/types/lists';
+import { WineDetails } from './WineDetails';
 
 interface Stats {
   users: {
@@ -15,6 +16,8 @@ interface Stats {
     total: number;
   };
   wines: number;
+  notes: number;
+  ai_summaries: number;
   messages: number;
 }
 
@@ -22,12 +25,15 @@ const initialStats: Stats = {
   users: { total: 0, pro: 0 },
   images: { folders: 0, total: 0 },
   wines: 0,
+  notes: 0,
+  ai_summaries: 0,
   messages: 0
 };
 
 interface ListConfig {
   title: string;
   columns: Column[];
+  onRowClick?: (row: any) => void;
 }
 
 export function DashboardContent() {
@@ -36,6 +42,7 @@ export function DashboardContent() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeList, setActiveList] = useState<string | null>(null);
+  const [selectedWineId, setSelectedWineId] = useState<number | null>(null);
 
   useEffect(() => {
     fetchStats();
@@ -101,7 +108,7 @@ export function DashboardContent() {
     }
   };
 
-  const LIST_CONFIGS: Record<string, ListConfig> = {
+  const LIST_CONFIGS: Record<string, ListConfig & { defaultSort?: { field: string; direction: 'ASC' | 'DESC' } }> = {
     users: {
       title: 'Users List',
       columns: [
@@ -148,6 +155,7 @@ export function DashboardContent() {
         { key: 'user_id', label: 'User ID', sortable: true },
         { key: 'username', label: 'Username', sortable: true, filterable: true },
       ],
+      onRowClick: (row) => setSelectedWineId(row.wine_id),
     },
     messages: {
       title: 'Contact Messages',
@@ -166,6 +174,25 @@ export function DashboardContent() {
           render: (value) => new Date(value).toLocaleString()
         },
       ],
+    },
+    users_wine_count: {
+      title: 'Users Wine Count',
+      columns: [
+        { key: 'id', label: 'User ID', sortable: true },
+        { key: 'username', label: 'Username', sortable: true, filterable: true },
+        { 
+          key: 'wine_count', 
+          label: 'Number of Wines', 
+          sortable: true,
+          render: (value) => (
+            <span className="font-mono">{value}</span>
+          )
+        },
+      ],
+      defaultSort: {
+        field: 'wine_count',
+        direction: 'DESC'
+      }
     },
   };
 
@@ -199,7 +226,7 @@ export function DashboardContent() {
             <p>Images: {loading ? '...' : stats.images.total}</p>
           </div>
           <div>
-            <p>Wines: {loading ? '...' : stats.wines}</p>
+            <p>Wines: {loading ? '...' : `${stats.wines} (${stats.notes || 0} notes, ${stats.ai_summaries || 0} AI summaries)`}</p>
             <p>Messages: {loading ? '...' : stats.messages}</p>
           </div>
         </div>
@@ -210,14 +237,19 @@ export function DashboardContent() {
         {/* Users Section */}
         <div className="bg-white rounded-lg p-6">
           <h2 className="text-xl font-semibold mb-4">Users</h2>
-          <div className="space-y-2">
+          <div className="flex flex-col space-y-2">
             <button
               onClick={() => setActiveList('users')}
-              className="text-blue-500 hover:text-blue-700"
+              className="text-blue-500 hover:text-blue-700 text-left"
             >
               List of users & Change pro status
             </button>
-           
+            <button
+              onClick={() => setActiveList('users_wine_count')}
+              className="text-blue-500 hover:text-blue-700 text-left"
+            >
+              Count of wines per user
+            </button>
           </div>
         </div>
 
@@ -258,7 +290,17 @@ export function DashboardContent() {
         <DataList
           listId={activeList}
           {...LIST_CONFIGS[activeList]}
+          defaultSort={LIST_CONFIGS[activeList].defaultSort}
           onClose={() => setActiveList(null)}
+          onRowClick={LIST_CONFIGS[activeList].onRowClick}
+        />
+      )}
+
+      {/* Add the WineDetails modal */}
+      {selectedWineId && (
+        <WineDetails
+          wineId={selectedWineId}
+          onClose={() => setSelectedWineId(null)}
         />
       )}
     </div>
