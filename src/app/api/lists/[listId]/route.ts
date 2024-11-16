@@ -15,6 +15,34 @@ export async function POST(
     let countQuery = '';
     let values: any[] = [];
 
+    // Define column mappings for all list types
+    const columnMappings: Record<string, Record<string, string>> = {
+      wines: {
+        'wine_id': 'wt.id',
+        'wine_name': 'wt.name',
+        'year': 'wt.year',
+        'user_id': 'wu.id',
+        'username': 'wu.username'
+      },
+      users: {
+        'id': 'id',
+        'username': 'username',
+        'email': 'email',
+        'isPro': 'has_proaccount',
+        'createdAt': 'created_at'
+      },
+      messages: {
+        'id': 'id',
+        'user_id': 'user_id',
+        'first_name': 'first_name',
+        'last_name': 'last_name',
+        'email': 'email',
+        'subject': 'subject',
+        'message': 'message',
+        'timestamp': 'timestamp'
+      }
+    };
+
     switch (listId) {
       case 'users':
         query = `SELECT 
@@ -37,7 +65,9 @@ export async function POST(
           wine_table wt
         JOIN 
           wine_users wu ON wt.user_id = wu.id`;
-        countQuery = `SELECT COUNT(*) as total FROM wine_table`;
+        countQuery = `SELECT COUNT(*) as total 
+          FROM wine_table wt 
+          JOIN wine_users wu ON wt.user_id = wu.id`;
         break;
       case 'messages':
         query = `SELECT 
@@ -59,22 +89,16 @@ export async function POST(
     // Add filters
     if (body.filters && body.filters.length > 0) {
       const whereConditions = body.filters
-        .map((filter, index) => {
-          // For wines list, we need to handle the column names differently
+        .map((filter) => {
           let columnName = filter.column;
-          if (listId === 'wines') {
-            // Map the frontend column names to the actual DB column names
-            const columnMapping: Record<string, string> = {
-              'wine_id': 'wt.id',
-              'wine_name': 'wt.name',
-              'year': 'wt.year',
-              'user_id': 'wu.id',
-              'username': 'wu.username'
-            };
-            columnName = columnMapping[filter.column] || filter.column;
+          
+          // Use the appropriate column mapping for the current list type
+          if (listId && listId in columnMappings) {
+            columnName = columnMappings[listId][filter.column] || filter.column;
           }
-          values.push(`%${filter.value}%`);
-          return `${columnName} LIKE $${values.length}`;
+          
+          values.push(`%${filter.value.toLowerCase()}%`);
+          return `LOWER(${columnName}::text) LIKE $${values.length}`;
         })
         .join(' AND ');
       
@@ -85,18 +109,13 @@ export async function POST(
 
     // Add sorting before pagination
     if (body.sortBy) {
-      // For wines list, we need to handle the column names differently
       let sortColumn = body.sortBy;
-      if (listId === 'wines') {
-        const columnMapping: Record<string, string> = {
-          'wine_id': 'wt.id',
-          'wine_name': 'wt.name',
-          'year': 'wt.year',
-          'user_id': 'wu.id',
-          'username': 'wu.username'
-        };
-        sortColumn = columnMapping[body.sortBy] || body.sortBy;
+      
+      // Use the same column mappings for sorting
+      if (listId && listId in columnMappings) {
+        sortColumn = columnMappings[listId][body.sortBy] || body.sortBy;
       }
+      
       query += ` ORDER BY ${sortColumn} ${body.sortDirection || 'ASC'}`;
     }
 
