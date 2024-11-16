@@ -1,11 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { query as dbQuery } from '@/lib/db';
 import { ListParams } from '@/types/lists';
-import type { Route } from 'next';
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { listId: string } } & Route
+  { params }: { params: { listId: string } }
 ) {
   try {
     const { listId } = params;
