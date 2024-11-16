@@ -60,27 +60,54 @@ export async function POST(
     if (body.filters && body.filters.length > 0) {
       const whereConditions = body.filters
         .map((filter, index) => {
+          // For wines list, we need to handle the column names differently
+          let columnName = filter.column;
+          if (listId === 'wines') {
+            // Map the frontend column names to the actual DB column names
+            const columnMapping: Record<string, string> = {
+              'wine_id': 'wt.id',
+              'wine_name': 'wt.name',
+              'year': 'wt.year',
+              'user_id': 'wu.id',
+              'username': 'wu.username'
+            };
+            columnName = columnMapping[filter.column] || filter.column;
+          }
           values.push(`%${filter.value}%`);
-          return `${filter.column} LIKE $${values.length}`;
+          return `${columnName} LIKE $${values.length}`;
         })
         .join(' AND ');
+      
+      // Add WHERE clause to both queries before pagination
       query += ` WHERE ${whereConditions}`;
       countQuery += ` WHERE ${whereConditions}`;
     }
 
-    // Add sorting
+    // Add sorting before pagination
     if (body.sortBy) {
-      query += ` ORDER BY ${body.sortBy} ${body.sortDirection || 'ASC'}`;
+      // For wines list, we need to handle the column names differently
+      let sortColumn = body.sortBy;
+      if (listId === 'wines') {
+        const columnMapping: Record<string, string> = {
+          'wine_id': 'wt.id',
+          'wine_name': 'wt.name',
+          'year': 'wt.year',
+          'user_id': 'wu.id',
+          'username': 'wu.username'
+        };
+        sortColumn = columnMapping[body.sortBy] || body.sortBy;
+      }
+      query += ` ORDER BY ${sortColumn} ${body.sortDirection || 'ASC'}`;
     }
 
-    // Add pagination
+    // First get the total count
+    const countResult = await dbQuery(countQuery, values);
+
+    // Then add pagination and get the page data
     query += ` LIMIT $${values.length + 1} OFFSET $${values.length + 2}`;
     values.push(body.pageSize, (body.page - 1) * body.pageSize);
 
-    const [data, countResult] = await Promise.all([
-      dbQuery(query, values),
-      dbQuery(countQuery, values.slice(0, -2)),
-    ]);
+    const data = await dbQuery(query, values);
 
     return NextResponse.json({
       data: data.rows,
