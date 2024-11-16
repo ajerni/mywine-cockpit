@@ -2,18 +2,12 @@ import { NextRequest, NextResponse } from 'next/server';
 import { query as dbQuery } from '@/lib/db';
 import { ListParams } from '@/types/lists';
 
-type Props = {
-  params: {
-    listId: string;
-  };
-};
-
 export async function POST(
   request: NextRequest,
-  props: Props
+  context: { params: { listId: string } } & { json: () => Promise<any> }
 ) {
   try {
-    const { listId } = props.params;
+    const { listId } = context.params;
     const body: ListParams = await request.json();
 
     // Here you'll implement the specific SQL queries for each list type
