@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Image from 'next/image';
 
 interface WineDetailsProps {
   wineId: number;
@@ -18,13 +19,37 @@ interface WineDetail {
   quantity: number;
 }
 
+interface Photo {
+  url: string;
+  fileId: string;
+}
+
 export function WineDetails({ wineId, onClose }: WineDetailsProps) {
   const [wine, setWine] = useState<WineDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [photos, setPhotos] = useState<Photo[]>([]);
 
   useEffect(() => {
     fetchWineDetails();
+  }, [wineId]);
+
+  useEffect(() => {
+    const fetchPhotos = async () => {
+      try {
+        const response = await fetch(`/api/photos/${wineId}`);
+        const data = await response.json();
+        if (data.photos) {
+          setPhotos(data.photos);
+        }
+      } catch (error) {
+        console.error('Error fetching photos:', error);
+      }
+    };
+
+    if (wineId) {
+      fetchPhotos();
+    }
   }, [wineId]);
 
   const fetchWineDetails = async () => {
@@ -102,6 +127,22 @@ export function WineDetails({ wineId, onClose }: WineDetailsProps) {
             </div>
           </div>
         )}
+
+        <div className="mt-6">
+          <h3 className="text-lg font-semibold mb-4">Photos</h3>
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+            {photos.map((photo) => (
+              <div key={photo.fileId} className="relative aspect-square">
+                <Image
+                  src={photo.url}
+                  alt="Wine photo"
+                  fill
+                  className="object-cover rounded-lg"
+                />
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
     </div>
   );
