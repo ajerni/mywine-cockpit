@@ -1,22 +1,16 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
-import { jwtVerify } from 'jose';
 
-// Paths that require authentication
-const protectedPaths = ['/dashboard'];
-
-// Add allowed origins
-const allowedOrigins = [
+const ALLOWED_ORIGINS = [
   'http://localhost:3000',
-  'https://mywine-cockpit.vercel.app',
-  'https://mywine-cockpit-git-dev-ajernis-projects.vercel.app',
-  'http://cockpit.mywine.info',
+  'https://cockpit.mywine.info'
 ];
 
-export async function middleware(request: NextRequest) {
-  // CORS check
+export function middleware(request: NextRequest) {
   const origin = request.headers.get('origin');
-  if (origin && !allowedOrigins.includes(origin)) {
+  
+  // Only allow specified origins
+  if (origin && !ALLOWED_ORIGINS.includes(origin)) {
     return new NextResponse(null, {
       status: 403,
       statusText: 'Forbidden',
@@ -26,51 +20,30 @@ export async function middleware(request: NextRequest) {
     });
   }
 
-  // Check if the requested path requires authentication
-  const isProtectedPath = protectedPaths.some(path => 
-    request.nextUrl.pathname.startsWith(path)
-  );
-
-  if (!isProtectedPath) {
-    return NextResponse.next();
+  // Handle OPTIONS request
+  if (request.method === 'OPTIONS') {
+    return new NextResponse(null, {
+      headers: {
+        'Access-Control-Allow-Origin': origin || ALLOWED_ORIGINS[0],
+        'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+        'Access-Control-Allow-Credentials': 'true',
+      },
+    });
   }
 
-  const token = request.cookies.get('auth_token');
-
-  if (!token) {
-    return redirectToLogin(request);
+  // Continue with the request
+  const response = NextResponse.next();
+  
+  // Add CORS headers to all responses
+  if (origin) {
+    response.headers.set('Access-Control-Allow-Origin', origin);
+    response.headers.set('Access-Control-Allow-Credentials', 'true');
   }
 
-  try {
-    // Verify the JWT token
-    await jwtVerify(
-      token.value,
-      new TextEncoder().encode(process.env.JWT_SECRET)
-    );
-    
-    return NextResponse.next();
-  } catch (error) {
-    // Token is invalid or expired
-    return redirectToLogin(request);
-  }
-}
-
-function redirectToLogin(request: NextRequest) {
-  const loginUrl = new URL('/', request.url);
-  loginUrl.searchParams.set('from', request.nextUrl.pathname);
-  return NextResponse.redirect(loginUrl);
+  return response;
 }
 
 export const config = {
-  matcher: [
-    /*
-     * Match all request paths except:
-     * - api routes (all API endpoints)
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     * - public files (public/*)
-     */
-    '/((?!api|_next/static|_next/image|favicon.ico|public/).*)',
-  ],
+  matcher: '/api/:path*',
 }; 

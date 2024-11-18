@@ -31,6 +31,9 @@ export function LoginPage() {
         throw new Error(data.error || 'Login failed');
       }
 
+      // Store token in localStorage
+      localStorage.setItem('auth_token', data.token);
+
       router.push('/dashboard');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Login failed');

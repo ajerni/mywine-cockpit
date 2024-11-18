@@ -1,7 +1,10 @@
 import { NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
 import { SignJWT } from 'jose';
 import { query } from '@/lib/db';
+import dotenv from 'dotenv';
+
+// Explicitly load .env file
+dotenv.config({ path: '.env' });
 
 interface AuthUser {
   id: number;
@@ -13,7 +16,8 @@ interface AuthUser {
 
 export async function POST(request: Request) {
   try {
-    console.log('1. Starting login process...');
+    // Force reload environment variables
+    dotenv.config({ path: '.env', override: true });
     
     const { email, password: hashedPassword } = await request.json();
     
@@ -24,8 +28,6 @@ export async function POST(request: Request) {
       );
     }
 
-    // Query using pgcrypto's crypt function for bcrypt comparison
-    console.log('3. Querying database...');
     try {
       const result = await query<AuthUser>(
         `SELECT * FROM wine_cockpit_auth 
@@ -34,8 +36,6 @@ export async function POST(request: Request) {
         [email, hashedPassword]
       );
 
-      console.log('4. Query completed, matching users found:', result.rows.length);
-
       if (result.rows.length === 0) {
         return NextResponse.json(
           { error: 'Invalid credentials' },
@@ -43,22 +43,34 @@ export async function POST(request: Request) {
         );
       }
 
-      // Create JWT token
-      console.log('5. Creating JWT token...');
-      const token = await new SignJWT({ email: result.rows[0].email })
-        .setProtectedHeader({ alg: 'HS256' })
-        .setExpirationTime('24h')
-        .sign(new TextEncoder().encode(process.env.JWT_SECRET));
+      const now = Math.floor(Date.now() / 1000);
+      const exp = now + (24 * 60 * 60);
 
-      const response = NextResponse.json({ success: true });
-      
-      // Set cookie
-      response.cookies.set('auth_token', token, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'strict',
-        maxAge: 60 * 60 * 24 // 24 hours
+      // Get JWT secret using dotenv explicitly
+      const jwtSecret = process.env.JWT_SECRET;
+      if (!jwtSecret) {
+        throw new Error('JWT_SECRET is not set in environment');
+      }
+
+      const secret = new TextEncoder().encode(jwtSecret);
+      console.log('Creating token with secret from dotenv:', {
+        secretLength: jwtSecret.length,
+        timestamp: now,
+        expiration: exp,
+        fromDotEnv: true
       });
+      
+      const fastApiToken = await new SignJWT({ 
+        sub: email,
+        role: 'admin',
+        exp: exp,
+        iat: now
+      })
+        .setProtectedHeader({ 
+          alg: 'HS256',
+          typ: 'JWT'
+        })
+        .sign(secret);
 
       // Update last_login timestamp
       try {
@@ -68,11 +80,12 @@ export async function POST(request: Request) {
         );
       } catch (updateError) {
         console.error('Failed to update last_login:', updateError);
-        // Don't fail the login if this update fails
       }
 
-      console.log('6. Login successful');
-      return response;
+      return NextResponse.json({ 
+        success: true,
+        token: fastApiToken
+      });
 
     } catch (dbError) {
       console.error('Database operation failed:', dbError);
@@ -82,10 +95,7 @@ export async function POST(request: Request) {
   } catch (error) {
     console.error('Login error:', error);
     return NextResponse.json(
-      { 
-        error: error instanceof Error ? error.message : 'Internal server error',
-        details: process.env.NODE_ENV === 'development' ? String(error) : undefined
-      },
+      { error: error instanceof Error ? error.message : 'Internal server error' },
       { status: 500 }
     );
   }

@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react';
 import { DataList } from './lists/DataList';
 import { Column, ListParams, ListResponse, Filter } from '@/types/lists';
 import { WineDetails } from './WineDetails';
+import { inspectJwtToken } from '@/lib/jwt-utils';
 
 interface Stats {
   users: {
@@ -55,6 +56,7 @@ export function DashboardContent() {
 
   useEffect(() => {
     fetchStats();
+    verifyJwtSecrets();
   }, []);
 
   const fetchStats = async () => {
@@ -138,6 +140,104 @@ export function DashboardContent() {
       console.log('Successfully deleted message:', messageId);
     } catch (error) {
       console.error('Failed to delete message:', error);
+    }
+  };
+
+  const handleExecuteSQL = async () => {
+    try {
+      const token = localStorage.getItem('auth_token');
+      if (!token) {
+        throw new Error('No authentication token found');
+      }
+
+      const cleanToken = token.replace(/^Bearer\s+/i, '');
+
+      const response = await fetch('/api/sql/execute', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${cleanToken}`,
+        },
+        body: JSON.stringify({ 
+          sql_query: sqlQuery 
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || `Failed to execute SQL query: ${response.status}`);
+      }
+
+      const data = await response.json();
+      setQueryResult(data);
+    } catch (error) {
+      console.error('Failed to execute SQL:', error);
+      setQueryResult({ 
+        columns: ['error'], 
+        rows: [{ error: error instanceof Error ? error.message : 'Failed to execute SQL query' }], 
+        error: error instanceof Error ? error.message : 'Failed to execute SQL query'
+      });
+    }
+  };
+
+  const verifyJwtSecrets = async () => {
+    try {
+      const token = localStorage.getItem('auth_token');
+      let nextJsVerification = null;
+      let fastApiVerification = null;
+      
+      // Try Next.js verification
+      try {
+        const nextResponse = await fetch('/api/verify-jwt-secret', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ token }),
+        });
+        
+        if (!nextResponse.ok) {
+          throw new Error(`Next.js verification failed: ${nextResponse.status} ${nextResponse.statusText}`);
+        }
+        nextJsVerification = await nextResponse.json();
+      } catch (nextError) {
+        console.error('Next.js verification error:', nextError);
+        nextJsVerification = { error: nextError instanceof Error ? nextError.message : 'Next.js verification failed' };
+      }
+
+      // Try FastAPI verification
+      try {
+        const fastApiResponse = await fetch('https://fastapi.mywine.info/verify-jwt-secret', {
+          method: 'GET',
+          headers: {
+            'Accept': 'application/json',
+          },
+        });
+        
+        if (!fastApiResponse.ok) {
+          throw new Error(`FastAPI verification failed: ${fastApiResponse.status} ${fastApiResponse.statusText}`);
+        }
+        fastApiVerification = await fastApiResponse.json();
+      } catch (fastApiError) {
+        console.error('FastAPI verification error:', fastApiError);
+        fastApiVerification = { error: fastApiError instanceof Error ? fastApiError.message : 'FastAPI verification failed' };
+      }
+
+      // Log results, even if some parts failed
+      console.log('JWT Verification Results:', {
+        nextJs: nextJsVerification,
+        fastApi: fastApiVerification,
+        secretsMatch: nextJsVerification && fastApiVerification && !nextJsVerification.error && !fastApiVerification.error
+          ? nextJsVerification.secretHash === fastApiVerification.secretHash
+          : 'Verification incomplete due to errors',
+        token: token ? {
+          present: true,
+          length: token.length,
+          firstChars: token.substring(0, 10) + '...'
+        } : 'No token found'
+      });
+    } catch (error) {
+      console.error('JWT verification failed:', error);
     }
   };
 
@@ -381,31 +481,7 @@ export function DashboardContent() {
             />
             <button
               className="w-full bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600"
-              onClick={async () => {
-                try {
-                  const response = await fetch('/api/sql/execute', {
-                    method: 'POST',
-                    headers: {
-                      'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({ sql: sqlQuery }),
-                  });
-
-                  if (!response.ok) {
-                    throw new Error('Failed to execute SQL');
-                  }
-
-                  const data = await response.json();
-                  setQueryResult(data);
-                } catch (error) {
-                  console.error('Failed to execute SQL:', error);
-                  setQueryResult({ 
-                    columns: ['error'], 
-                    rows: [], 
-                    error: 'Failed to execute SQL query' 
-                  });
-                }
-              }}
+              onClick={handleExecuteSQL}
             >
               Execute SQL
             </button>
@@ -416,7 +492,11 @@ export function DashboardContent() {
             <h3 className="font-semibold mb-2">Result</h3>
             <div className="h-40 overflow-auto">
               {queryResult?.error ? (
-                <div className="text-red-500">{queryResult.error}</div>
+                <div className="text-red-500">
+                  {typeof queryResult.error === 'object' 
+                    ? JSON.stringify(queryResult.error, null, 2)
+                    : queryResult.error}
+                </div>
               ) : queryResult ? (
                 <table className="w-full text-sm">
                   <thead>
@@ -433,7 +513,9 @@ export function DashboardContent() {
                       <tr key={i}>
                         {queryResult.columns.map((col, j) => (
                           <td key={j} className="border p-1">
-                            {row[col]}
+                            {typeof row[col] === 'object' 
+                              ? JSON.stringify(row[col]) 
+                              : String(row[col])}
                           </td>
                         ))}
                       </tr>
