@@ -36,6 +36,12 @@ interface ListConfig {
   onRowClick?: (row: any) => void;
 }
 
+interface SQLQueryResult {
+  columns: string[];
+  rows: any[];
+  error?: string;
+}
+
 export function DashboardContent() {
   const router = useRouter();
   const [stats, setStats] = useState<Stats>(initialStats);
@@ -43,6 +49,9 @@ export function DashboardContent() {
   const [error, setError] = useState<string | null>(null);
   const [activeList, setActiveList] = useState<string | null>(null);
   const [selectedWineId, setSelectedWineId] = useState<number | null>(null);
+  const [sqlQuestion, setSqlQuestion] = useState('');
+  const [sqlQuery, setSqlQuery] = useState('');
+  const [queryResult, setQueryResult] = useState<SQLQueryResult | null>(null);
 
   useEffect(() => {
     fetchStats();
@@ -318,6 +327,126 @@ export function DashboardContent() {
           >
             List of messages
           </button>
+        </div>
+      </div>
+
+      {/* SQL Query Section */}
+      <div className="mt-6 bg-white rounded-lg p-6">
+        <h2 className="text-xl font-semibold mb-4">Custom SQL Queries</h2>
+        <div className="grid grid-cols-3 gap-4">
+          {/* Question Box */}
+          <div className="border rounded-lg p-4">
+            <h3 className="font-semibold mb-2">Question</h3>
+            <textarea
+              className="w-full h-32 p-2 border rounded mb-2 font-mono"
+              placeholder="Enter your question here..."
+              value={sqlQuestion}
+              onChange={(e) => setSqlQuestion(e.target.value)}
+            />
+            <button
+              className="w-full bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+              onClick={async () => {
+                try {
+                  const response = await fetch('/api/sql/generate', {
+                    method: 'POST',
+                    headers: {
+                      'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ question: sqlQuestion }),
+                  });
+
+                  if (!response.ok) {
+                    throw new Error('Failed to generate SQL');
+                  }
+
+                  const data = await response.json();
+                  setSqlQuery(data.sql);
+                } catch (error) {
+                  console.error('Failed to generate SQL:', error);
+                }
+              }}
+            >
+              Get SQL query
+            </button>
+          </div>
+
+          {/* SQL Box */}
+          <div className="border rounded-lg p-4">
+            <h3 className="font-semibold mb-2">SQL</h3>
+            <textarea
+              className="w-full h-32 p-2 border rounded mb-2 font-mono"
+              placeholder="Enter SQL query here..."
+              value={sqlQuery}
+              onChange={(e) => setSqlQuery(e.target.value)}
+            />
+            <button
+              className="w-full bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600"
+              onClick={async () => {
+                try {
+                  const response = await fetch('/api/sql/execute', {
+                    method: 'POST',
+                    headers: {
+                      'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ sql: sqlQuery }),
+                  });
+
+                  if (!response.ok) {
+                    throw new Error('Failed to execute SQL');
+                  }
+
+                  const data = await response.json();
+                  setQueryResult(data);
+                } catch (error) {
+                  console.error('Failed to execute SQL:', error);
+                  setQueryResult({ 
+                    columns: ['error'], 
+                    rows: [], 
+                    error: 'Failed to execute SQL query' 
+                  });
+                }
+              }}
+            >
+              Execute SQL
+            </button>
+          </div>
+
+          {/* Result Box */}
+          <div className="border rounded-lg p-4">
+            <h3 className="font-semibold mb-2">Result</h3>
+            <div className="h-40 overflow-auto">
+              {queryResult?.error ? (
+                <div className="text-red-500">{queryResult.error}</div>
+              ) : queryResult ? (
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr>
+                      {queryResult.columns.map((col, i) => (
+                        <th key={i} className="border p-1 bg-gray-100">
+                          {col}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {queryResult.rows.map((row, i) => (
+                      <tr key={i}>
+                        {queryResult.columns.map((col, j) => (
+                          <td key={j} className="border p-1">
+                            {row[col]}
+                          </td>
+                        ))}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              ) : (
+                <div className="text-gray-500 italic">
+                  Query results will appear here...
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       </div>
 
