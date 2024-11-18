@@ -3,6 +3,7 @@ import type { NextRequest } from 'next/server';
 
 const ALLOWED_ORIGINS = [
   'http://localhost:3000',
+  'https://mywine-cockpit-git-sql-ajernis-projects.vercel.app',
   'https://cockpit.mywine.info'
 ];
 
