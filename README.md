@@ -1,3 +1,3 @@
 # mywine-cockpit
 
-working on main branch again - adding totals
+working on sql banch for SQL stuff
