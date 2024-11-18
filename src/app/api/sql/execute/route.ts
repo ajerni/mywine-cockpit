@@ -2,6 +2,45 @@ import { NextRequest, NextResponse } from 'next/server';
 import { authMiddleware } from '@/middleware/auth';
 import { inspectJwtToken } from '@/lib/jwt-utils';
 
+async function executeWithRetry(url: URL, token: string, maxRetries = 3, delay = 1000) {
+  let lastError: Error | null = null;
+  
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        }
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        return { response, data };
+      }
+
+      // If it's not a server error (5xx), don't retry
+      if (response.status < 500) {
+        return { response, data };
+      }
+
+      throw new Error(`Server error: ${response.status}`);
+
+    } catch (error) {
+      lastError = error instanceof Error ? error : new Error('Unknown error');
+      console.log(`Attempt ${attempt} failed:`, lastError.message);
+      
+      if (attempt < maxRetries) {
+        await new Promise(resolve => setTimeout(resolve, delay * attempt));
+      }
+    }
+  }
+
+  throw lastError || new Error('All retry attempts failed');
+}
+
 export const POST = authMiddleware(async (request: NextRequest) => {
   try {
     const body = await request.json();
@@ -28,23 +67,12 @@ export const POST = authMiddleware(async (request: NextRequest) => {
       fullToken: token.substring(0, 20) + '...'
     });
 
-    // Log the SQL query for debugging
-    console.log('Executing SQL query:', sql_query);
-
     // Create URL with query parameter
     const url = new URL('https://fastapi.mywine.info/execute-sql');
     url.searchParams.append('sql_query', sql_query);
 
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`,
-      }
-      // No body needed as we're using query parameters
-    });
-
-    const data = await response.json();
+    // Use retry mechanism
+    const { response, data } = await executeWithRetry(url, token);
 
     if (!response.ok) {
       // Better error handling for FastAPI validation errors
