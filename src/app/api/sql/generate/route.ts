@@ -6,20 +6,18 @@ async function generateWithRetry(
   url: URL, 
   token: string, 
   maxRetries = 3, 
-  delay = 1000,
-  body?: any
+  delay = 1000
 ) {
   let lastError: Error | null = null;
   
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
       const response = await fetch(url, {
-        method: 'POST',
+        method: 'GET',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify(body)
+        }
       });
 
       const data = await response.json();
