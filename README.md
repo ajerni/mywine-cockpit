@@ -1,3 +1,3 @@
 # mywine-cockpit
 
-working on sql banch for SQL stuff
+working on main branch again after adding SQL statement generation
