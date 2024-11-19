@@ -51,11 +51,11 @@ async function generateWithRetry(
 export const POST = authMiddleware(async (request: NextRequest) => {
   try {
     const body = await request.json();
-    const { prompt } = body;
+    const { question } = body;
 
-    if (!prompt) {
+    if (!question) {
       return NextResponse.json({ 
-        error: 'Prompt is required' 
+        error: 'Question is required' 
       }, { status: 400 });
     }
     
@@ -77,14 +77,13 @@ export const POST = authMiddleware(async (request: NextRequest) => {
     // Create URL for the generate endpoint
     const url = new URL('https://fastapi.mywine.info/generate-sql');
     
-    // Send the request with the question parameter in the body
+    // Send the request with the question parameter
     const { response, data } = await generateWithRetry(
       url, 
       token, 
       3, 
       1000, 
-      // Add the request body with the question parameter
-      { question: prompt }
+      { question }
     );
 
     if (!response.ok) {
