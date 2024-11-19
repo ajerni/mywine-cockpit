@@ -6,18 +6,20 @@ async function generateWithRetry(
   url: URL, 
   token: string, 
   maxRetries = 3, 
-  delay = 1000
+  delay = 1000,
+  body?: any
 ) {
   let lastError: Error | null = null;
   
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
       const response = await fetch(url, {
-        method: 'GET',
+        method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`,
-        }
+        },
+        body: JSON.stringify(body)
       });
 
       const data = await response.json();
@@ -107,12 +109,8 @@ export const POST = authMiddleware(async (request: NextRequest) => {
       return NextResponse.json({ error: errorMessage }, { status: response.status });
     }
 
-    // Add semicolon to the SQL if it doesn't already end with one
-    const sqlQuery = data.generated_sql?.trim() || '';
-    const formattedSql = sqlQuery.endsWith(';') ? sqlQuery : `${sqlQuery};`;
-
     return NextResponse.json({
-      sql: formattedSql
+      sql: data.sql // Update to match the FastAPI response structure
     });
 
   } catch (error) {

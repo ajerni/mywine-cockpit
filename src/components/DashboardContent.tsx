@@ -488,7 +488,7 @@ export function DashboardContent() {
               className="w-full h-32 p-2 border rounded mb-2 font-mono"
               placeholder="Enter SQL query here..."
               value={sqlQuery}
-              onChange={(e) => setSqlQuery(e.target.value)}
+              onChange={(e) => setSqlQuery(e.target.value.trim().replace(/;*$/, ';'))}
             />
             <button
               className="w-full bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600"
