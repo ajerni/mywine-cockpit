@@ -255,18 +255,19 @@ export function DashboardContent() {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${cleanToken}`,
         },
-        body: JSON.stringify({ prompt: sqlQuestion }),
+        body: JSON.stringify({ question: sqlQuestion }),
       });
 
       if (!response.ok) {
-        throw new Error('Failed to generate SQL');
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to generate SQL');
       }
 
       const data = await response.json();
       setSqlQuery(data.sql);
     } catch (error) {
       console.error('Failed to generate SQL:', error);
-      // Optionally set some error state here to show to the user
+      // Optionally show error to user
     }
   };
 

@@ -2,7 +2,13 @@ import { NextRequest, NextResponse } from 'next/server';
 import { authMiddleware } from '@/middleware/auth';
 import { inspectJwtToken } from '@/lib/jwt-utils';
 
-async function generateWithRetry(url: URL, token: string, maxRetries = 3, delay = 1000) {
+async function generateWithRetry(
+  url: URL, 
+  token: string, 
+  maxRetries = 3, 
+  delay = 1000,
+  body?: any
+) {
   let lastError: Error | null = null;
   
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
@@ -12,7 +18,8 @@ async function generateWithRetry(url: URL, token: string, maxRetries = 3, delay 
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`,
-        }
+        },
+        body: JSON.stringify(body)
       });
 
       const data = await response.json();
@@ -69,16 +76,31 @@ export const POST = authMiddleware(async (request: NextRequest) => {
 
     // Create URL for the generate endpoint
     const url = new URL('https://fastapi.mywine.info/generate-sql');
-    url.searchParams.append('prompt', prompt);
-
-    // Use retry mechanism
-    const { response, data } = await generateWithRetry(url, token);
+    
+    // Send the request with the question parameter in the body
+    const { response, data } = await generateWithRetry(
+      url, 
+      token, 
+      3, 
+      1000, 
+      // Add the request body with the question parameter
+      { question: prompt }
+    );
 
     if (!response.ok) {
       // Better error handling for FastAPI validation errors
-      if (Array.isArray(data)) {
-        const errorMessage = data.map(err => `${err.msg} at ${err.loc.join('.')}`).join('; ');
-        return NextResponse.json({ error: errorMessage }, { status: response.status });
+      if (typeof data === 'string') {
+        try {
+          const parsedErrors = JSON.parse(data);
+          if (Array.isArray(parsedErrors)) {
+            const errorMessage = parsedErrors.map(err => 
+              `${err.msg} at ${err.loc.join('.')}`
+            ).join('; ');
+            return NextResponse.json({ error: errorMessage }, { status: response.status });
+          }
+        } catch (e) {
+          // If parsing fails, use the original error
+        }
       }
       
       const errorMessage = typeof data.detail === 'object' 
@@ -89,7 +111,7 @@ export const POST = authMiddleware(async (request: NextRequest) => {
     }
 
     return NextResponse.json({
-      generated_sql: data.generated_sql
+      sql: data.sql // Update to match the FastAPI response structure
     });
 
   } catch (error) {
