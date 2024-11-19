@@ -255,7 +255,7 @@ export function DashboardContent() {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${cleanToken}`,
         },
-        body: JSON.stringify({ question: sqlQuestion }),
+        body: JSON.stringify({ prompt: sqlQuestion }),
       });
 
       if (!response.ok) {
