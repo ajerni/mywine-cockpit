@@ -110,7 +110,7 @@ export const POST = authMiddleware(async (request: NextRequest) => {
     }
 
     // Add semicolon to the SQL if it doesn't already end with one
-    const sqlQuery = data.sql.trim();
+    const sqlQuery = data.generated_sql?.trim() || '';
     const formattedSql = sqlQuery.endsWith(';') ? sqlQuery : `${sqlQuery};`;
 
     return NextResponse.json({
