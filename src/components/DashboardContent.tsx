@@ -240,6 +240,36 @@ export function DashboardContent() {
     }
   };
 
+  const handleGenerateSQL = async () => {
+    try {
+      const token = localStorage.getItem('auth_token');
+      if (!token) {
+        throw new Error('No authentication token found');
+      }
+
+      const cleanToken = token.replace(/^Bearer\s+/i, '');
+
+      const response = await fetch('/api/sql/generate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${cleanToken}`,
+        },
+        body: JSON.stringify({ question: sqlQuestion }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to generate SQL');
+      }
+
+      const data = await response.json();
+      setSqlQuery(data.sql);
+    } catch (error) {
+      console.error('Failed to generate SQL:', error);
+      // Optionally set some error state here to show to the user
+    }
+  };
+
   const LIST_CONFIGS: Record<string, ListConfig & { defaultSort?: { field: string; direction: 'ASC' | 'DESC' } }> = {
     users: {
       title: 'Users List',
@@ -444,26 +474,7 @@ export function DashboardContent() {
             />
             <button
               className="w-full bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
-              onClick={async () => {
-                try {
-                  const response = await fetch('/api/sql/generate', {
-                    method: 'POST',
-                    headers: {
-                      'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({ question: sqlQuestion }),
-                  });
-
-                  if (!response.ok) {
-                    throw new Error('Failed to generate SQL');
-                  }
-
-                  const data = await response.json();
-                  setSqlQuery(data.sql);
-                } catch (error) {
-                  console.error('Failed to generate SQL:', error);
-                }
-              }}
+              onClick={handleGenerateSQL}
             >
               Get SQL query
             </button>
