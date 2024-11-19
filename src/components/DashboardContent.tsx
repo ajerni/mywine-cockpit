@@ -264,10 +264,9 @@ export function DashboardContent() {
       }
 
       const data = await response.json();
-      setSqlQuery(data.sql);
+      setSqlQuery(data.sql.trim().replace(/;*$/, ';'));
     } catch (error) {
       console.error('Failed to generate SQL:', error);
-      // Optionally show error to user
     }
   };
 
@@ -488,7 +487,7 @@ export function DashboardContent() {
               className="w-full h-32 p-2 border rounded mb-2 font-mono"
               placeholder="Enter SQL query here..."
               value={sqlQuery}
-              onChange={(e) => setSqlQuery(e.target.value.trim().replace(/;*$/, ';'))}
+              onChange={(e) => setSqlQuery(e.target.value)}
             />
             <button
               className="w-full bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600"
