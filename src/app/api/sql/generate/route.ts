@@ -74,16 +74,16 @@ export const POST = authMiddleware(async (request: NextRequest) => {
       fullToken: token.substring(0, 20) + '...'
     });
 
-    // Create URL for the generate endpoint
+    // Create URL for the generate endpoint with question as query parameter
     const url = new URL('https://fastapi.mywine.info/generate-sql');
+    url.searchParams.append('question', question);
     
-    // Send the request with the question parameter
+    // Send the request without a body since we're using query parameters
     const { response, data } = await generateWithRetry(
       url, 
       token, 
       3, 
-      1000, 
-      { question }
+      1000
     );
 
     if (!response.ok) {
