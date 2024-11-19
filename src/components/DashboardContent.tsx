@@ -5,7 +5,6 @@ import { useEffect, useState } from 'react';
 import { DataList } from './lists/DataList';
 import { Column, ListParams, ListResponse, Filter } from '@/types/lists';
 import { WineDetails } from './WineDetails';
-import { inspectJwtToken } from '@/lib/jwt-utils';
 
 interface Stats {
   users: {
