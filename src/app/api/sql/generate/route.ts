@@ -109,8 +109,12 @@ export const POST = authMiddleware(async (request: NextRequest) => {
       return NextResponse.json({ error: errorMessage }, { status: response.status });
     }
 
+    // Add semicolon to the SQL if it doesn't already end with one
+    const sqlQuery = data.sql.trim();
+    const formattedSql = sqlQuery.endsWith(';') ? sqlQuery : `${sqlQuery};`;
+
     return NextResponse.json({
-      sql: data.sql // Update to match the FastAPI response structure
+      sql: formattedSql
     });
 
   } catch (error) {
