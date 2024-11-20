@@ -53,6 +53,7 @@ export function DashboardContent() {
   const [sqlQuestion, setSqlQuestion] = useState('');
   const [sqlQuery, setSqlQuery] = useState('');
   const [queryResult, setQueryResult] = useState<SQLQueryResult | null>(null);
+  const [isLoadingImageFolders, setIsLoadingImageFolders] = useState(false);
 
   useEffect(() => {
     fetchStats();
@@ -212,6 +213,27 @@ export function DashboardContent() {
     } catch (error) {
       console.error('Failed to generate SQL:', error);
     }
+  };
+
+  const handleImageFoldersClick = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    if (isLoadingImageFolders) return;
+    
+    setIsLoadingImageFolders(true);
+    
+    setActiveList((currentList) => {
+      if (currentList === 'image_folders') {
+        setIsLoadingImageFolders(false);
+        return currentList;
+      }
+      return 'image_folders';
+    });
+    
+    setTimeout(() => {
+      setIsLoadingImageFolders(false);
+    }, 100);
   };
 
   const LIST_CONFIGS: Record<string, ListConfig & { defaultSort?: { field: string; direction: 'ASC' | 'DESC' } }> = {
@@ -411,8 +433,11 @@ export function DashboardContent() {
           <h2 className="text-xl font-semibold mb-4">Images</h2>
           <div className="flex flex-col space-y-2">
             <button
-              onClick={() => setActiveList('image_folders')}
-              className="text-blue-500 hover:text-blue-700 text-left"
+              onClick={handleImageFoldersClick}
+              disabled={isLoadingImageFolders}
+              className={`text-blue-500 hover:text-blue-700 text-left ${
+                isLoadingImageFolders ? 'opacity-50 cursor-not-allowed' : ''
+              }`}
             >
               List of image folders with amount of images
             </button>
