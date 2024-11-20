@@ -5,14 +5,22 @@ const ALLOWED_ORIGINS = [
   'https://cockpit.mywine.info',
   'https://mywine-cockpit.vercel.app',
   'https://mywine-cockpit-git-images-ajernis-projects.vercel.app',
-  'http://localhost:3000'
+  'http://localhost:3000',
+  '.vercel.app'
 ];
 
 export function middleware(request: NextRequest) {
   const origin = request.headers.get('origin');
   
+  // Allow internal API calls (no origin header)
+  if (!origin) {
+    return NextResponse.next();
+  }
+  
   // Only allow specified origins
-  if (origin && !ALLOWED_ORIGINS.includes(origin)) {
+  if (!ALLOWED_ORIGINS.some(allowed => 
+    origin === allowed || (allowed.startsWith('.') && origin.endsWith(allowed))
+  )) {
     return new NextResponse(null, {
       status: 403,
       statusText: 'Forbidden',
