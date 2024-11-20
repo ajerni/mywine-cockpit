@@ -1,20 +1,11 @@
 import { NextResponse } from 'next/server';
 import { query } from '@/lib/db';
-import ImageKit from 'imagekit';
-import { authMiddleware } from '@/middleware/auth';
 
-const imagekit = new ImageKit({
-  publicKey: process.env.NEXT_PUBLIC_IMAGEKIT_PUBLIC_KEY!,
-  privateKey: process.env.IMAGEKIT_PRIVATE_KEY!,
-  urlEndpoint: process.env.NEXT_PUBLIC_IMAGEKIT_URL_ENDPOINT!,
-});
-
-// Helper function for delay
-const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
-
-export const GET = authMiddleware(async () => {
+export async function GET() {
   try {
     const stats = await Promise.all([
+      // You can add your SQL queries here as we go along
+      // Example structure:
       getUserStats(),
       getImageStats(),
       getWineCount(),
@@ -41,7 +32,7 @@ export const GET = authMiddleware(async () => {
       { status: 500 }
     );
   }
-});
+}
 
 interface UserStats {
   total_users: number;
@@ -63,33 +54,39 @@ async function getUserStats(): Promise<{ total: number; pro: number }> {
   };
 }
 
-async function getImageStats(): Promise<{ folders: number; total: number; folderList: string[] }> {
+interface ImageStats {
+  folders: number;
+  total: number;
+  folderList: string[];
+}
+
+async function getImageStats(): Promise<ImageStats> {
   try {
-    // Get all files in the wines folder
-    const files = await imagekit.listFiles({
-      path: '/wines',
-      searchQuery: 'type = "file"'
+    // Ensure NEXTAUTH_URL is available and properly formatted
+    const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000';
+    const response = await fetch(`${baseUrl}/api/imagestats`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      // Add cache: 'no-store' to prevent caching
+      cache: 'no-store'
     });
 
-    // Wait 700ms before next request to avoid rate limiting
-    await delay(700);
+    if (!response.ok) {
+      console.error('Failed to fetch image stats:', response.status, response.statusText);
+      return { folders: 0, total: 0, folderList: [] };
+    }
 
-    // Get all folders in the wines folder
-    const folders = await imagekit.listFiles({
-      path: '/wines',
-      searchQuery: 'type = "folder"'
-    });
-
-    console.log('Image stats:', {
-      totalFolders: folders.length,
-      totalFiles: files.length,
-      folderList: folders.map(f => f.name)
-    });
-
+    const data = await response.json();
+    
+    // Add more detailed logging
+    console.log('Image stats response:', data);
+    
     return {
-      folders: folders.length,
-      total: files.length,
-      folderList: folders.map(f => f.name)
+      folders: data.totalFolders || 0,
+      total: data.totalFiles || 0,
+      folderList: data.folderList || [],
     };
   } catch (error) {
     console.error('Error in getImageStats:', error);

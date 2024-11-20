@@ -241,23 +241,47 @@ export function DashboardContent() {
     }, 100);
   };
 
-  const handleOrphanedFoldersClick = async () => {
+  const handleOrphanedFoldersClick = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    if (isLoadingImageFolders) return;
+    
+    setIsLoadingImageFolders(true);
+    
     try {
+      const token = localStorage.getItem('auth_token');
+      console.log('Fetching orphaned folders...');
+      
       const response = await fetch('/api/lists/orphaned_image_folders', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ page: 1, pageSize: 100 }), // We'll show all in one page
+          'Authorization': `Bearer ${token}`
+        }
       });
 
+      console.log('Response status:', response.status);
+      const responseText = await response.text();
+      console.log('Raw response:', responseText);
+
       if (!response.ok) {
-        throw new Error('Failed to fetch orphaned folders');
+        throw new Error(`Failed to fetch orphaned folders: ${response.status} - ${responseText}`);
       }
 
+      // Only parse as JSON if we have content
+      const data = responseText ? JSON.parse(responseText) : null;
+      if (!data) {
+        throw new Error('No data received from server');
+      }
+
+      console.log('Orphaned folders data:', data);
       setActiveList('orphaned_image_folders');
     } catch (error) {
       console.error('Failed to fetch orphaned folders:', error);
+      setError(error instanceof Error ? error.message : 'Failed to fetch orphaned folders');
+    } finally {
+      setIsLoadingImageFolders(false);
     }
   };
 
