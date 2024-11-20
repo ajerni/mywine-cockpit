@@ -8,9 +8,6 @@ const imagekit = new ImageKit({
   urlEndpoint: process.env.NEXT_PUBLIC_IMAGEKIT_URL_ENDPOINT!,
 });
 
-// Add delay helper
-const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
-
 export const GET = authMiddleware(async (request: NextRequest) => {
   try {
     const wineId = request.url.split('/').pop();
@@ -22,13 +19,11 @@ export const GET = authMiddleware(async (request: NextRequest) => {
       );
     }
 
-    // List all files in the wine's folder
     const files = await imagekit.listFiles({
       path: `/wines/${wineId}`,
-      sort: 'DESC_CREATED'  // Most recent first
+      sort: 'DESC_CREATED'
     });
 
-    // Extract URLs and fileIds from the files
     const photos = files.map(file => ({
       url: file.url,
       fileId: file.fileId

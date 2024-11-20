@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { query } from '@/lib/db';
 import ImageKit from 'imagekit';
+import { authMiddleware } from '@/middleware/auth';
 
 const imagekit = new ImageKit({
   publicKey: process.env.NEXT_PUBLIC_IMAGEKIT_PUBLIC_KEY!,
@@ -11,11 +12,9 @@ const imagekit = new ImageKit({
 // Helper function for delay
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
-export async function GET() {
+export const GET = authMiddleware(async () => {
   try {
     const stats = await Promise.all([
-      // You can add your SQL queries here as we go along
-      // Example structure:
       getUserStats(),
       getImageStats(),
       getWineCount(),
@@ -42,7 +41,7 @@ export async function GET() {
       { status: 500 }
     );
   }
-}
+});
 
 interface UserStats {
   total_users: number;
