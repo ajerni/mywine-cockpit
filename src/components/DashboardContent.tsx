@@ -236,6 +236,26 @@ export function DashboardContent() {
     }, 100);
   };
 
+  const handleOrphanedFoldersClick = async () => {
+    try {
+      const response = await fetch('/api/lists/orphaned_image_folders', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ page: 1, pageSize: 100 }), // We'll show all in one page
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch orphaned folders');
+      }
+
+      setActiveList('orphaned_image_folders');
+    } catch (error) {
+      console.error('Failed to fetch orphaned folders:', error);
+    }
+  };
+
   const LIST_CONFIGS: Record<string, ListConfig & { defaultSort?: { field: string; direction: 'ASC' | 'DESC' } }> = {
     users: {
       title: 'Users List',
@@ -358,6 +378,22 @@ export function DashboardContent() {
         direction: 'DESC'
       }
     },
+    orphaned_image_folders: {
+      title: 'Orphaned Image Folders',
+      columns: [
+        { key: 'folder_name', label: 'Folder Name', sortable: true, filterable: true },
+        { 
+          key: 'created_at', 
+          label: 'Created At', 
+          sortable: true,
+          render: (value) => new Date(value).toLocaleDateString()
+        },
+      ],
+      defaultSort: {
+        field: 'folder_name',
+        direction: 'ASC'
+      }
+    },
   };
 
   return (
@@ -441,7 +477,12 @@ export function DashboardContent() {
             >
               List of image folders with amount of images
             </button>
-            <p>List of image folders without wine</p>
+            <button
+              onClick={handleOrphanedFoldersClick}
+              className="text-blue-500 hover:text-blue-700 text-left"
+            >
+              List of image folders without wine
+            </button>
           </div>
         </div>
 
