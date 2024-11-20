@@ -10,6 +10,23 @@ export async function POST(
     const listId = request.url.split('/').pop();
     const body: ListParams = await request.json();
 
+    // Special handling for image folders list
+    if (listId === 'image_folders') {
+      const response = await fetch(`${request.headers.get('origin')}/api/imagefolderstats`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(body),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch image folder stats');
+      }
+
+      return response;
+    }
+
     // Here you'll implement the specific SQL queries for each list type
     let query = '';
     let countQuery = '';

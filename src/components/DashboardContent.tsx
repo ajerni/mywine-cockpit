@@ -14,6 +14,7 @@ interface Stats {
   images: {
     folders: number;
     total: number;
+    folderList: string[];
   };
   wines: number;
   notes: number;
@@ -23,7 +24,7 @@ interface Stats {
 
 const initialStats: Stats = {
   users: { total: 0, pro: 0 },
-  images: { folders: 0, total: 0 },
+  images: { folders: 0, total: 0, folderList: [] },
   wines: 0,
   notes: 0,
   ai_summaries: 0,
@@ -55,8 +56,12 @@ export function DashboardContent() {
 
   useEffect(() => {
     fetchStats();
-    verifyJwtSecrets();
+    
   }, []);
+
+  useEffect(() => {
+    console.log('Current stats:', stats);
+  }, [stats]);
 
   const fetchStats = async () => {
     try {
@@ -176,67 +181,6 @@ export function DashboardContent() {
         rows: [{ error: error instanceof Error ? error.message : 'Failed to execute SQL query' }], 
         error: error instanceof Error ? error.message : 'Failed to execute SQL query'
       });
-    }
-  };
-
-  const verifyJwtSecrets = async () => {
-    try {
-      const token = localStorage.getItem('auth_token');
-      let nextJsVerification = null;
-      let fastApiVerification = null;
-      
-      // Try Next.js verification
-      try {
-        const nextResponse = await fetch('/api/verify-jwt-secret', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ token }),
-        });
-        
-        if (!nextResponse.ok) {
-          throw new Error(`Next.js verification failed: ${nextResponse.status} ${nextResponse.statusText}`);
-        }
-        nextJsVerification = await nextResponse.json();
-      } catch (nextError) {
-        console.error('Next.js verification error:', nextError);
-        nextJsVerification = { error: nextError instanceof Error ? nextError.message : 'Next.js verification failed' };
-      }
-
-      // Try FastAPI verification
-      try {
-        const fastApiResponse = await fetch('https://fastapi.mywine.info/verify-jwt-secret', {
-          method: 'GET',
-          headers: {
-            'Accept': 'application/json',
-          },
-        });
-        
-        if (!fastApiResponse.ok) {
-          throw new Error(`FastAPI verification failed: ${fastApiResponse.status} ${fastApiResponse.statusText}`);
-        }
-        fastApiVerification = await fastApiResponse.json();
-      } catch (fastApiError) {
-        console.error('FastAPI verification error:', fastApiError);
-        fastApiVerification = { error: fastApiError instanceof Error ? fastApiError.message : 'FastAPI verification failed' };
-      }
-
-      // Log results, even if some parts failed
-      console.log('JWT Verification Results:', {
-        nextJs: nextJsVerification,
-        fastApi: fastApiVerification,
-        secretsMatch: nextJsVerification && fastApiVerification && !nextJsVerification.error && !fastApiVerification.error
-          ? nextJsVerification.secretHash === fastApiVerification.secretHash
-          : 'Verification incomplete due to errors',
-        token: token ? {
-          present: true,
-          length: token.length,
-          firstChars: token.substring(0, 10) + '...'
-        } : 'No token found'
-      });
-    } catch (error) {
-      console.error('JWT verification failed:', error);
     }
   };
 
@@ -368,6 +312,30 @@ export function DashboardContent() {
         direction: 'DESC'
       }
     },
+    image_folders: {
+      title: 'Image Folders',
+      columns: [
+        { key: 'folder_name', label: 'Folder Name', sortable: true, filterable: true },
+        { 
+          key: 'file_count', 
+          label: 'Number of Files', 
+          sortable: true,
+          render: (value) => (
+            <span className="font-mono">{value}</span>
+          )
+        },
+        { 
+          key: 'created_at', 
+          label: 'Created At', 
+          sortable: true,
+          render: (value) => new Date(value).toLocaleDateString()
+        },
+      ],
+      defaultSort: {
+        field: 'file_count',
+        direction: 'DESC'
+      }
+    },
   };
 
   return (
@@ -441,8 +409,13 @@ export function DashboardContent() {
         {/* Images Section */}
         <div className="bg-white rounded-lg p-6">
           <h2 className="text-xl font-semibold mb-4">Images</h2>
-          <div className="space-y-2">
-            <p>List of image folders with amount of images</p>
+          <div className="flex flex-col space-y-2">
+            <button
+              onClick={() => setActiveList('image_folders')}
+              className="text-blue-500 hover:text-blue-700 text-left"
+            >
+              List of image folders with amount of images
+            </button>
             <p>List of image folders without wine</p>
           </div>
         </div>

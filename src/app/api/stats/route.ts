@@ -54,9 +54,44 @@ async function getUserStats(): Promise<{ total: number; pro: number }> {
   };
 }
 
-async function getImageStats() {
-  // We'll add your SQL query here
-  return { folders: 0, total: 0 };
+interface ImageStats {
+  folders: number;
+  total: number;
+  folderList: string[];
+}
+
+async function getImageStats(): Promise<ImageStats> {
+  try {
+    // Ensure NEXTAUTH_URL is available and properly formatted
+    const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000';
+    const response = await fetch(`${baseUrl}/api/imagestats`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      // Add cache: 'no-store' to prevent caching
+      cache: 'no-store'
+    });
+
+    if (!response.ok) {
+      console.error('Failed to fetch image stats:', response.status, response.statusText);
+      return { folders: 0, total: 0, folderList: [] };
+    }
+
+    const data = await response.json();
+    
+    // Add more detailed logging
+    console.log('Image stats response:', data);
+    
+    return {
+      folders: data.totalFolders || 0,
+      total: data.totalFiles || 0,
+      folderList: data.folderList || [],
+    };
+  } catch (error) {
+    console.error('Error in getImageStats:', error);
+    return { folders: 0, total: 0, folderList: [] };
+  }
 }
 
 interface WineCount {

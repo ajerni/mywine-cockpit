@@ -58,14 +58,6 @@ export const POST = authMiddleware(async (request: NextRequest) => {
     }
 
     const token = authHeader.split(' ')[1];
-    
-    const tokenDetails = inspectJwtToken(token);
-    console.log('Token being sent to FastAPI:', {
-      header: tokenDetails.header,
-      payload: tokenDetails.payload,
-      signatureLength: tokenDetails.signature.length,
-      fullToken: token.substring(0, 20) + '...'
-    });
 
     // Create URL with query parameter
     const url = new URL('https://fastapi.mywine.info/execute-sql');
