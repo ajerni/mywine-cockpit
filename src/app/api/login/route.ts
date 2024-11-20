@@ -6,6 +6,25 @@ import dotenv from 'dotenv';
 // Explicitly load .env file
 dotenv.config({ path: '.env' });
 
+const ALLOWED_ORIGINS = [
+  'http://localhost:3000',
+  'https://cockpit.mywine.info',
+  'https://mywine-cockpit-git-images-ajernis-projects.vercel.app',
+  'https://mywine-cockpit.vercel.app'
+];
+
+function addCorsHeaders(headers: Headers, requestOrigin: string | null) {
+  const origin = requestOrigin && ALLOWED_ORIGINS.includes(requestOrigin) 
+    ? requestOrigin 
+    : ALLOWED_ORIGINS[0];
+  
+  headers.set('Access-Control-Allow-Origin', origin);
+  headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  headers.set('Access-Control-Allow-Credentials', 'true');
+  return headers;
+}
+
 interface AuthUser {
   id: number;
   email: string;
@@ -14,17 +33,27 @@ interface AuthUser {
   last_login: Date | null;
 }
 
+export async function OPTIONS() {
+  const headers = addCorsHeaders(new Headers(), null);
+  return new NextResponse(null, { headers });
+}
+
 export async function POST(request: Request) {
   try {
+    const origin = request.headers.get('origin');
+    
     // Force reload environment variables
     dotenv.config({ path: '.env', override: true });
     
     const { email, password: hashedPassword } = await request.json();
     
     if (!email || !hashedPassword) {
-      return NextResponse.json(
-        { error: 'Email and password are required' },
-        { status: 400 }
+      return new NextResponse(
+        JSON.stringify({ error: 'Email and password are required' }),
+        { 
+          status: 400,
+          headers: addCorsHeaders(new Headers(), origin)
+        }
       );
     }
 
@@ -37,9 +66,12 @@ export async function POST(request: Request) {
       );
 
       if (result.rows.length === 0) {
-        return NextResponse.json(
-          { error: 'Invalid credentials' },
-          { status: 401 }
+        return new NextResponse(
+          JSON.stringify({ error: 'Invalid credentials' }),
+          { 
+            status: 401,
+            headers: addCorsHeaders(new Headers(), origin)
+          }
         );
       }
 
@@ -82,21 +114,36 @@ export async function POST(request: Request) {
         console.error('Failed to update last_login:', updateError);
       }
 
-      return NextResponse.json({ 
-        success: true,
-        token: fastApiToken
-      });
+      const headers = addCorsHeaders(new Headers(), origin);
+      headers.set('Content-Type', 'application/json');
+
+      return new NextResponse(
+        JSON.stringify({ 
+          success: true,
+          token: fastApiToken
+        }),
+        { headers }
+      );
 
     } catch (dbError) {
       console.error('Database operation failed:', dbError);
-      throw new Error(dbError instanceof Error ? dbError.message : 'Database operation failed');
+      return new NextResponse(
+        JSON.stringify({ error: dbError instanceof Error ? dbError.message : 'Database operation failed' }),
+        { 
+          status: 500,
+          headers: addCorsHeaders(new Headers(), origin)
+        }
+      );
     }
 
   } catch (error) {
     console.error('Login error:', error);
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Internal server error' },
-      { status: 500 }
+    return new NextResponse(
+      JSON.stringify({ error: error instanceof Error ? error.message : 'Internal server error' }),
+      { 
+        status: 500,
+        headers: addCorsHeaders(new Headers(), request.headers.get('origin'))
+      }
     );
   }
 } 
