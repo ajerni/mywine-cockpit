@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { query } from '@/lib/db';
+import ImageKit from 'imagekit';
 
 export async function GET() {
   try {
@@ -62,32 +63,59 @@ interface ImageStats {
 
 async function getImageStats(): Promise<ImageStats> {
   try {
-    // Ensure NEXTAUTH_URL is available and properly formatted
-    const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000';
-    const response = await fetch(`${baseUrl}/api/imagestats`, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      // Add cache: 'no-store' to prevent caching
-      cache: 'no-store'
+    // Make a direct call to imagekit instead of going through another API endpoint
+    const imagekit = new ImageKit({
+      publicKey: process.env.NEXT_PUBLIC_IMAGEKIT_PUBLIC_KEY!,
+      privateKey: process.env.IMAGEKIT_PRIVATE_KEY!,
+      urlEndpoint: process.env.NEXT_PUBLIC_IMAGEKIT_URL_ENDPOINT!,
     });
 
-    if (!response.ok) {
-      console.error('Failed to fetch image stats:', response.status, response.statusText);
-      return { folders: 0, total: 0, folderList: [] };
-    }
+    // Get all files in the wines folder
+    const files = await imagekit.listFiles({
+      path: '/wines',
+      searchQuery: 'type = "file"'  // Only get files, not folders
+    });
 
-    const data = await response.json();
-    
-    // Add more detailed logging
-    console.log('Image stats response:', data);
+    // Get all folders in the wines folder
+    const folders = await imagekit.listFiles({
+      path: '/wines',
+      searchQuery: 'type = "folder"'
+    });
+
+    const folderNames = folders.map(folder => folder.name);
+
+    let totalFilesInFolders = 0;
+
+    const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
+    const folderStats = await Promise.all(
+      folders.map(async (folder, index) => {
+        // Wait 700ms before each folder request (except first one)
+        if (index > 0) {
+          await delay(700);
+        }
+        
+        const folderFiles = await imagekit.listFiles({
+          path: folder.filePath,
+          searchQuery: 'type = "file"'
+        });
+        
+        totalFilesInFolders = folderFiles.length;  
+        
+        return {
+          name: folder.name,
+          folderList: folderNames,
+          fileCount: folderFiles.length
+        };
+      })
+    );
     
     return {
-      folders: data.totalFolders || 0,
-      total: data.totalFiles || 0,
-      folderList: data.folderList || [],
+      folders: folders.length,
+      total: totalFilesInFolders,
+      folderList: folderNames
     };
+
   } catch (error) {
     console.error('Error in getImageStats:', error);
     return { folders: 0, total: 0, folderList: [] };
