@@ -4,6 +4,7 @@ import jwt, { JwtPayload } from 'jsonwebtoken';
 const ALLOWED_ORIGINS = [
   'http://localhost:3000',
   'https://cockpit.mywine.info',
+  'https://mywine-cockpit-git-images-ajernis-projects.vercel.app',
   'https://mywine-cockpit.vercel.app'
 ];
 
