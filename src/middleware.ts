@@ -2,9 +2,10 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
 const ALLOWED_ORIGINS = [
-  'http://localhost:3000',
-  'https://mywine-cockpit-git-sql-ajernis-projects.vercel.app',
-  'https://cockpit.mywine.info'
+  'https://cockpit.mywine.info',
+  'https://mywine-cockpit.vercel.app',
+  'https://mywine-cockpit-git-images-ajernis-projects.vercel.app',
+  'http://localhost:3000'
 ];
 
 export function middleware(request: NextRequest) {

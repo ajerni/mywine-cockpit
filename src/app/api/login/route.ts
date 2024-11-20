@@ -7,10 +7,10 @@ import dotenv from 'dotenv';
 dotenv.config({ path: '.env' });
 
 const ALLOWED_ORIGINS = [
-  'http://localhost:3000',
   'https://cockpit.mywine.info',
+  'https://mywine-cockpit.vercel.app',
   'https://mywine-cockpit-git-images-ajernis-projects.vercel.app',
-  'https://mywine-cockpit.vercel.app'
+  'http://localhost:3000'
 ];
 
 function addCorsHeaders(headers: Headers, requestOrigin: string | null) {

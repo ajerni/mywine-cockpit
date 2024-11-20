@@ -2,10 +2,10 @@ import { NextResponse, NextRequest } from 'next/server';
 import jwt, { JwtPayload } from 'jsonwebtoken';
 
 const ALLOWED_ORIGINS = [
-  'http://localhost:3000',
   'https://cockpit.mywine.info',
+  'https://mywine-cockpit.vercel.app',
   'https://mywine-cockpit-git-images-ajernis-projects.vercel.app',
-  'https://mywine-cockpit.vercel.app'
+  'http://localhost:3000'
 ];
 
 // Helper function to check if origin is allowed
