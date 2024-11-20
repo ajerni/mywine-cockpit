@@ -10,38 +10,6 @@ export async function POST(
     const listId = request.url.split('/').pop();
     const body: ListParams = await request.json();
 
-    // Special handling for image folders list
-    if (listId === 'image_folders') {
-      try {
-        // Get base URL from environment or request
-        const baseUrl = process.env.NEXTAUTH_URL || request.headers.get('origin') || 'https://cockpit.mywine.info';
-        
-        const response = await fetch(`${baseUrl}/api/imagefolderstats`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            // Add host header for internal routing
-            'Host': new URL(baseUrl).host
-          },
-          body: JSON.stringify(body),
-        });
-
-        if (!response.ok) {
-          throw new Error(`Failed to fetch image folder stats: ${response.statusText}`);
-        }
-
-        const data = await response.json();
-        
-        return NextResponse.json(data);
-      } catch (error) {
-        console.error('Image folders list error:', error);
-        return NextResponse.json(
-          { error: 'Failed to fetch image folder statistics' },
-          { status: 500 }
-        );
-      }
-    }
-
     // Here you'll implement the specific SQL queries for each list type
     let query = '';
     let countQuery = '';
