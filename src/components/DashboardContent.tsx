@@ -66,22 +66,27 @@ export function DashboardContent() {
 
   const fetchStats = async () => {
     try {
+      const token = localStorage.getItem('auth_token');
       const response = await fetch('/api/stats', {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
         },
       });
 
       if (!response.ok) {
-        throw new Error('Failed to fetch stats');
+        const text = await response.text();
+        console.error('Stats fetch failed:', response.status, text);
+        throw new Error(`Failed to fetch stats: ${response.status}`);
       }
 
       const data = await response.json();
+      console.log('Stats fetched successfully:', data);
       setStats(data);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load stats');
-      console.error('Error fetching stats:', err);
+    } catch (error) {
+      console.error('Error fetching stats:', error);
+      setError(error instanceof Error ? error.message : 'Failed to fetch stats');
     } finally {
       setLoading(false);
     }

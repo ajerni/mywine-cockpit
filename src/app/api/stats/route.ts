@@ -1,5 +1,15 @@
 import { NextResponse } from 'next/server';
 import { query } from '@/lib/db';
+import ImageKit from 'imagekit';
+
+const imagekit = new ImageKit({
+  publicKey: process.env.NEXT_PUBLIC_IMAGEKIT_PUBLIC_KEY!,
+  privateKey: process.env.IMAGEKIT_PRIVATE_KEY!,
+  urlEndpoint: process.env.NEXT_PUBLIC_IMAGEKIT_URL_ENDPOINT!,
+});
+
+// Helper function for delay
+const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
 export async function GET() {
   try {
@@ -54,39 +64,33 @@ async function getUserStats(): Promise<{ total: number; pro: number }> {
   };
 }
 
-interface ImageStats {
-  folders: number;
-  total: number;
-  folderList: string[];
-}
-
-async function getImageStats(): Promise<ImageStats> {
+async function getImageStats(): Promise<{ folders: number; total: number; folderList: string[] }> {
   try {
-    // Ensure NEXTAUTH_URL is available and properly formatted
-    const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000';
-    const response = await fetch(`${baseUrl}/api/imagestats`, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      // Add cache: 'no-store' to prevent caching
-      cache: 'no-store'
+    // Get all files in the wines folder
+    const files = await imagekit.listFiles({
+      path: '/wines',
+      searchQuery: 'type = "file"'
     });
 
-    if (!response.ok) {
-      console.error('Failed to fetch image stats:', response.status, response.statusText);
-      return { folders: 0, total: 0, folderList: [] };
-    }
+    // Wait 700ms before next request to avoid rate limiting
+    await delay(700);
 
-    const data = await response.json();
-    
-    // Add more detailed logging
-    console.log('Image stats response:', data);
-    
+    // Get all folders in the wines folder
+    const folders = await imagekit.listFiles({
+      path: '/wines',
+      searchQuery: 'type = "folder"'
+    });
+
+    console.log('Image stats:', {
+      totalFolders: folders.length,
+      totalFiles: files.length,
+      folderList: folders.map(f => f.name)
+    });
+
     return {
-      folders: data.totalFolders || 0,
-      total: data.totalFiles || 0,
-      folderList: data.folderList || [],
+      folders: folders.length,
+      total: files.length,
+      folderList: folders.map(f => f.name)
     };
   } catch (error) {
     console.error('Error in getImageStats:', error);

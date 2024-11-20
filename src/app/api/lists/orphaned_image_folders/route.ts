@@ -1,6 +1,9 @@
 import { NextResponse } from 'next/server';
 import { query } from '@/lib/db';
 import ImageKit from 'imagekit';
+import { authMiddleware } from '@/middleware/auth';
+
+const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
 const imagekit = new ImageKit({
   publicKey: process.env.NEXT_PUBLIC_IMAGEKIT_PUBLIC_KEY!,
@@ -8,13 +11,16 @@ const imagekit = new ImageKit({
   urlEndpoint: process.env.NEXT_PUBLIC_IMAGEKIT_URL_ENDPOINT!,
 });
 
-export async function POST(request: Request) {
+export const POST = authMiddleware(async (request: Request) => {
   try {
     // Get all folders from ImageKit
     const folders = await imagekit.listFiles({
       path: '/wines',
       searchQuery: 'type = "folder"'
     });
+
+    // Add delay to avoid rate limiting
+    await delay(700);
 
     // Get all wine IDs from database
     const wineResult = await query(
@@ -45,4 +51,4 @@ export async function POST(request: Request) {
       { status: 500 }
     );
   }
-} 
+}); 

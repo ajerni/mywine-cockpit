@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import ImageKit from 'imagekit';
+import { authMiddleware } from '@/middleware/auth';
 
 const imagekit = new ImageKit({
   publicKey: process.env.NEXT_PUBLIC_IMAGEKIT_PUBLIC_KEY!,
@@ -7,12 +8,18 @@ const imagekit = new ImageKit({
   urlEndpoint: process.env.NEXT_PUBLIC_IMAGEKIT_URL_ENDPOINT!,
 });
 
-export async function GET(request: NextRequest) {
+// Add delay helper
+const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
+export const GET = authMiddleware(async (request: NextRequest) => {
   try {
     const wineId = request.url.split('/').pop();
     
     if (!wineId) {
-      return NextResponse.json({ error: 'Wine ID is required' }, { status: 400 });
+      return NextResponse.json(
+        { error: 'Wine ID is required' }, 
+        { status: 400 }
+      );
     }
 
     // List all files in the wine's folder
@@ -30,6 +37,9 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ photos });
   } catch (error) {
     console.error('Error fetching wine photos:', error);
-    return NextResponse.json({ error: 'Failed to fetch photos' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Failed to fetch photos' }, 
+      { status: 500 }
+    );
   }
-} 
+}); 
