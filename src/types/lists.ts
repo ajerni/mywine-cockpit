@@ -18,7 +18,10 @@ export interface ListParams {
   pageSize: number;
   sortBy?: string;
   sortDirection?: 'asc' | 'desc';
-  filters?: Filter[];
+  filters?: Array<{
+    column: string;
+    value: string;
+  }>;
 }
 
 export interface ListResponse<T> {

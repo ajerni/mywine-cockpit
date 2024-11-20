@@ -1,10 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { query as dbQuery } from '@/lib/db';
 import { ListParams } from '@/types/lists';
+import ImageKit from 'imagekit';
+import { authMiddleware } from '@/middleware/auth';
 
-export async function POST(
-  request: Request
-) {
+const imagekit = new ImageKit({
+  publicKey: process.env.NEXT_PUBLIC_IMAGEKIT_PUBLIC_KEY!,
+  privateKey: process.env.IMAGEKIT_PRIVATE_KEY!,
+  urlEndpoint: process.env.NEXT_PUBLIC_IMAGEKIT_URL_ENDPOINT!,
+});
+
+// Helper function for delay
+const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
+// Define allowed sort keys for folder stats
+type FolderStatKeys = 'folder_name' | 'file_count' | 'created_at';
+
+export const POST = authMiddleware(async (request: Request) => {
   try {
     // Get listId from URL
     const listId = request.url.split('/').pop();
@@ -13,22 +25,65 @@ export async function POST(
     // Special handling for image folders list
     if (listId === 'image_folders') {
       try {
-        const response = await fetch(`${request.headers.get('origin')}/api/imagefolderstats`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(body),
+        // Get all folders from ImageKit
+        const folders = await imagekit.listFiles({
+          path: '/wines',
+          searchQuery: 'type = "folder"'
         });
 
-        if (!response.ok) {
-          throw new Error(`Failed to fetch image folder stats: ${response.statusText}`);
+        // Add delay to avoid rate limiting
+        await delay(700);
+
+        // Get file count for each folder
+        const folderStats = await Promise.all(
+          folders.map(async (folder, index) => {
+            // Add delay between requests
+            if (index > 0) {
+              await delay(700);
+            }
+
+            const folderFiles = await imagekit.listFiles({
+              path: `/wines/${folder.name}`,
+              searchQuery: 'type = "file"'
+            });
+
+            return {
+              folder_name: folder.name,
+              file_count: folderFiles.length,
+              created_at: folder.createdAt
+            };
+          })
+        );
+
+        // Apply sorting if requested
+        if (body.sortBy) {
+          folderStats.sort((a, b) => {
+            const multiplier = body.sortDirection === 'desc' ? -1 : 1;
+            
+            // Type guard to ensure sortBy is a valid key
+            const sortKey = body.sortBy as FolderStatKeys;
+            
+            if (sortKey === 'file_count') {
+              return multiplier * (a.file_count - b.file_count);
+            }
+            
+            // Type assertion since we know these properties exist
+            const aValue = String(a[sortKey]);
+            const bValue = String(b[sortKey]);
+            return multiplier * aValue.localeCompare(bValue);
+          });
         }
 
-        const data = await response.json();
-        
-        // Return a new response instead of forwarding the original
-        return NextResponse.json(data);
+        // Apply pagination
+        const start = (body.page - 1) * body.pageSize;
+        const paginatedResults = folderStats.slice(start, start + body.pageSize);
+
+        return NextResponse.json({
+          data: paginatedResults,
+          total: folderStats.length,
+          page: body.page,
+          pageSize: body.pageSize
+        });
       } catch (error) {
         console.error('Image folders list error:', error);
         return NextResponse.json(
@@ -187,4 +242,4 @@ export async function POST(
       { status: 500 }
     );
   }
-} 
+}); 
