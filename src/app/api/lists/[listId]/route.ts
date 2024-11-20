@@ -12,19 +12,30 @@ export async function POST(
 
     // Special handling for image folders list
     if (listId === 'image_folders') {
-      const response = await fetch(`${request.headers.get('origin')}/api/imagefolderstats`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(body),
-      });
+      try {
+        const response = await fetch(`${request.headers.get('origin')}/api/imagefolderstats`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(body),
+        });
 
-      if (!response.ok) {
-        throw new Error('Failed to fetch image folder stats');
+        if (!response.ok) {
+          throw new Error(`Failed to fetch image folder stats: ${response.statusText}`);
+        }
+
+        const data = await response.json();
+        
+        // Return a new response instead of forwarding the original
+        return NextResponse.json(data);
+      } catch (error) {
+        console.error('Image folders list error:', error);
+        return NextResponse.json(
+          { error: 'Failed to fetch image folder statistics' },
+          { status: 500 }
+        );
       }
-
-      return response;
     }
 
     // Here you'll implement the specific SQL queries for each list type
