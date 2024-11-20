@@ -51,14 +51,43 @@ export function authMiddleware(handler: RouteHandler) {
         );
       }
 
-      // Pass the request through with the original Authorization header
-      const response = await handler(request);
-      const headers = addCorsHeaders(new Headers(response.headers), origin);
+      // Verify the token
+      const token = authHeader.split(' ')[1];
+      try {
+        jwt.verify(token, process.env.JWT_SECRET || '');
+      } catch (jwtError) {
+        console.error('JWT verification failed:', jwtError);
+        return NextResponse.json(
+          { error: 'Invalid token' },
+          { 
+            status: 401,
+            headers: addCorsHeaders(new Headers(), origin)
+          }
+        );
+      }
 
-      return new NextResponse(response.body, {
-        status: response.status,
-        headers
-      });
+      // Pass the request through with the original Authorization header
+      try {
+        const response = await handler(request);
+        const headers = addCorsHeaders(new Headers(response.headers), origin);
+        
+        // Ensure we have a valid response body
+        const body = response.body || JSON.stringify({});
+        
+        return new NextResponse(body, {
+          status: response.status,
+          headers
+        });
+      } catch (handlerError) {
+        console.error('Handler error:', handlerError);
+        return NextResponse.json(
+          { error: 'Internal server error' },
+          { 
+            status: 500,
+            headers: addCorsHeaders(new Headers(), origin)
+          }
+        );
+      }
 
     } catch (error) {
       console.error('Auth middleware error:', error);
